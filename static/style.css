@@ -141,6 +141,19 @@
     background-color: white;
 }
 
+#creator-modal > div > div.modal-header > button {	
+    background-color: white;	
+}	
+#creator-modal > div {	
+    border : 1px solid white;	
+}	
+#load-exp-modal > div > div.modal-header > button {	
+    background-color: white;	
+}	
+#load-exp-modal > div {	
+    border : 1px solid white;	
+}
+
 #surface-viz > div.js-plotly-plot > div > div > svg:nth-child(1) {
     border: 1px solid white;
     border-radius: 20px;
