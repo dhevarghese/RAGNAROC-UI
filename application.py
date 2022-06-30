@@ -32,14 +32,14 @@ application = app.server
 
 client = boto3.client(
     'dynamodb',
-    aws_access_key_id='AKIAUEW5BFOJBMGPZ4VG',
-    aws_secret_access_key='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',
+    aws_access_key_id='AKIAUEW5BFOJK5X4PFVS',
+    aws_secret_access_key='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',
     region_name="us-east-1",
     )
 dynamodb = boto3.resource(
     'dynamodb',
-    aws_access_key_id='AKIAUEW5BFOJBMGPZ4VG',
-    aws_secret_access_key='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',
+    aws_access_key_id='AKIAUEW5BFOJK5X4PFVS',
+    aws_secret_access_key='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',
     region_name="us-east-1",
     )
 ddb_exceptions = client.exceptions
@@ -114,14 +114,14 @@ def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimT
         openAlert = not validated
 
         for i in range(len(rows)):
-            if(rows[i]["vis-objs-item"] == name):
+            if(rows[i]["name"] == name):
                 duplicateObj = True
                 break
         
         if(n_clicks>0 and validated and not duplicateObj):
-            rows.append({'vis-objs-item': name, 'vis-objs-item-X': x, 'vis-objs-item-Y': y, 'vis-objs-item-duration': duration, 'vis-objs-item-latency': latency, 'vis-objs-item-stim-type': stimType})
+            rows.append({'name': name, 'X': x, 'Y': y, 'duration': duration, 'latency': latency, 'stimulus': stimType})
 
-    elif (inputId == "preset-experiment-choice"):
+    elif (inputId == "preset-experiment-choice" and preset != None):
         presetType = ctx.triggered[0]['value'].split('.')[0]
         rows = getExperimentVisualObjectPresets(presetType)
     elif (inputId == "input-alerts"):
@@ -132,21 +132,21 @@ def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimT
 def getExperimentVisualObjectPresets(presetType):
     preset = []
     if(presetType == "Brisson"):
-        preset.append({'vis-objs-item': "1", 'vis-objs-item-X': 7, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 100, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "1"})
+        preset.append({'name': "1", 'X': 7, 'Y': 14, 'duration': 100, 'latency': 0, 'stimulus': "1"})
     elif(presetType == "Single"):
-        preset.append({'vis-objs-item': "1", 'vis-objs-item-X': 7, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 500, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "1"})
+        preset.append({'name': "1", 'X': 7, 'Y': 14, 'duration': 500, 'latency': 0, 'stimulus': "1"})
     elif(presetType == "Same"):
-        preset.append({'vis-objs-item': "1", 'vis-objs-item-X': 7, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 120, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "1"})
-        preset.append({'vis-objs-item': "2", 'vis-objs-item-X': 7, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 120, 'vis-objs-item-latency': 120, 'vis-objs-item-stim-type': "2"})
+        preset.append({'name': "1", 'X': 7, 'Y': 14, 'duration': 120, 'latency': 0, 'stimulus': "1"})
+        preset.append({'name': "2", 'X': 7, 'Y': 14, 'duration': 120, 'latency': 120, 'stimulus': "2"})
     elif(presetType == "Diff"):
-        preset.append({'vis-objs-item': "1", 'vis-objs-item-X': 7, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 120, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "1"})
-        preset.append({'vis-objs-item': "2", 'vis-objs-item-X': 21, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 120, 'vis-objs-item-latency': 120, 'vis-objs-item-stim-type': "2"})
+        preset.append({'name': "1", 'X': 7, 'Y': 14, 'duration': 120, 'latency': 0, 'stimulus': "1"})
+        preset.append({'name': "2", 'X': 21, 'Y': 14, 'duration': 120, 'latency': 120, 'stimulus': "2"})
     elif(presetType == "MidTLateralD"):
-        preset.append({'vis-objs-item': "1", 'vis-objs-item-X': 14, 'vis-objs-item-Y': 7, 'vis-objs-item-duration': 500, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "1"})
-        preset.append({'vis-objs-item': "2", 'vis-objs-item-X': 7, 'vis-objs-item-Y': 14, 'vis-objs-item-duration': 500, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "2"})
+        preset.append({'name': "1", 'X': 14, 'Y': 7, 'duration': 500, 'latency': 0, 'stimulus': "1"})
+        preset.append({'name': "2", 'X': 7, 'Y': 14, 'duration': 500, 'latency': 0, 'stimulus': "2"})
     elif(presetType == "EimerGrubert"):
-        preset.append({'vis-objs-item': "1", 'vis-objs-item-X': 10, 'vis-objs-item-Y': 10, 'vis-objs-item-duration': 40, 'vis-objs-item-latency': 0, 'vis-objs-item-stim-type': "1"})
-        preset.append({'vis-objs-item': "2", 'vis-objs-item-X': 10, 'vis-objs-item-Y': 18, 'vis-objs-item-duration': 40, 'vis-objs-item-latency': 10, 'vis-objs-item-stim-type': "2"})
+        preset.append({'name': "1", 'X': 10, 'Y': 10, 'duration': 40, 'latency': 0, 'stimulus': "1"})
+        preset.append({'name': "2", 'X': 10, 'Y': 18, 'duration': 40, 'latency': 10, 'stimulus': "2"})
     return preset
 
 @app.callback(
@@ -202,7 +202,7 @@ def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, ma
         maxStimuliReached = (len(rows) > 2)
 
         for i in range(len(rows)):
-            if(rows[i]["stim-type-item"] == name):
+            if(rows[i]["stimName"] == name):
                 duplicateStimulus = True
                 break
 
@@ -211,9 +211,9 @@ def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, ma
         #if(n_clicks>0 and (name!="") and (tdWeight <= 1) and (tdWeight >= 0) and (buWeight <= 1) and (buWeight >= 0) ):
         if(n_clicks>0 and not openAlert and not maxStimuliReached and not duplicateStimulus):
             #stimTypes.append(StimulusTypes(buWeight,tdWeight))
-            #rows.append({'stim-type-item': (1 if rows==None else len(rows)+1), 'td-weights': tdWeight, 'bu-weights': buWeight})
-            rows.append({'stim-type-item': name, 'td-weights': tdWeight, 'bu-weights': buWeight})
-    elif (inputId == "preset-experiment-choice"):
+            #rows.append({'stimName': (1 if rows==None else len(rows)+1), 'td': tdWeight, 'bu': buWeight})
+            rows.append({'stimName': name, 'td': tdWeight, 'bu': buWeight})
+    elif (inputId == "preset-experiment-choice" and preset != None):
         presetType = ctx.triggered[0]['value'].split('.')[0]
         rows = getExperimentStimulusTypesPresets(presetType)
     elif (inputId == "input-alerts"):
@@ -224,23 +224,23 @@ def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, ma
 def getExperimentStimulusTypesPresets(presetType):
     preset = []
     if(presetType == "Brisson"):
-        preset.append({'stim-type-item': "1", 'td-weights': 0.4, 'bu-weights': 0.6})
-        preset.append({'stim-type-item': "2", 'td-weights': 0, 'bu-weights': 0})
+        preset.append({'stimName': "1", 'td': 0.4, 'bu': 0.6})
+        preset.append({'stimName': "2", 'td': 0, 'bu': 0})
     elif(presetType == "Single"):
-        preset.append({'stim-type-item': "1", 'td-weights': 0.18, 'bu-weights': 0.15})
-        preset.append({'stim-type-item': "2", 'td-weights': 0, 'bu-weights': 0})
+        preset.append({'stimName': "1", 'td': 0.18, 'bu': 0.15})
+        preset.append({'stimName': "2", 'td': 0, 'bu': 0})
     elif(presetType == "Same"):
-        preset.append({'stim-type-item': "1", 'td-weights': 0.18, 'bu-weights': 0.15})
-        preset.append({'stim-type-item': "2", 'td-weights': 0.18, 'bu-weights': 0.15})
+        preset.append({'stimName': "1", 'td': 0.18, 'bu': 0.15})
+        preset.append({'stimName': "2", 'td': 0.18, 'bu': 0.15})
     elif(presetType == "Diff"):
-        preset.append({'stim-type-item': "1", 'td-weights': 0.18, 'bu-weights': 0.15})
-        preset.append({'stim-type-item': "2", 'td-weights': 0.18, 'bu-weights': 0.15})
+        preset.append({'stimName': "1", 'td': 0.18, 'bu': 0.15})
+        preset.append({'stimName': "2", 'td': 0.18, 'bu': 0.15})
     elif(presetType == "MidTLateralD"):
-        preset.append({'stim-type-item': "1", 'td-weights': 0.4, 'bu-weights': 0.15})
-        preset.append({'stim-type-item': "2", 'td-weights': 0.18, 'bu-weights': 0.17})
+        preset.append({'stimName': "1", 'td': 0.4, 'bu': 0.15})
+        preset.append({'stimName': "2", 'td': 0.18, 'bu': 0.17})
     elif(presetType == "EimerGrubert"):
-        preset.append({'stim-type-item': "1", 'td-weights': 0.7, 'bu-weights': 0.6})
-        preset.append({'stim-type-item': "2", 'td-weights': 0.7, 'bu-weights': 0.6})
+        preset.append({'stimName': "1", 'td': 0.7, 'bu': 0.6})
+        preset.append({'stimName': "2", 'td': 0.7, 'bu': 0.6})
     return preset
 
 @app.callback(Output('vis-objs-table','data'),
@@ -254,10 +254,10 @@ def deleteStimulus(previous, current, vos):
     if previous is None:
         raise PreventUpdate 
     else:
-        removedStim = [row["stim-type-item"] for row in previous if row not in current]
+        removedStim = [row["stimName"] for row in previous if row not in current]
         i=0
         while (i < len(vos)):
-            if(vos[i]['vis-objs-item']==removedStim[0]):
+            if(vos[i]['name']==removedStim[0]):
                 vos.pop(i)
                 break
             i+=1
@@ -284,7 +284,7 @@ def setPresetRuntime(preset):
     ]
 )
 def updateStimulusTypeDropDown(rows):
-    opts = [row['stim-type-item'] for row in rows]
+    opts = [row['stimName'] for row in rows]
     return opts, opts
     #To remove visual objects on removing a stimulus type -> Callback output VO table data. Loop through the rows, remove the row with an unknown name.
     #At the moment this is a rather... slow implementation
@@ -336,36 +336,6 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
             return ogData, data, True, "Please set runtime of experiment", None, {"display": "none"}, openSavedAlert
 
         #Validated. 
-        nameStore = {}
-
-        #Setup variables to pass to the model
-        x = np.zeros(len(vos)).astype(int)
-        y = np.zeros(len(vos)).astype(int)
-        Stype = np.zeros(len(vos)).astype(int)
-        latency = np.zeros(len(vos)).astype(int)
-        duration = np.zeros(len(vos)).astype(int)
-        sts_len = len(sts) 
-        while (sts_len < 3):
-            sts.append({'stim-type-item': str(sts_len+1), 'td-weights': 0, 'bu-weights': 0})
-            sts_len += 1
-        t1_bu = sts[0]['bu-weights']
-        t2_bu = sts[1]['bu-weights']
-        t3_bu = sts[2]['bu-weights']
-
-        t1_td = sts[0]['td-weights']
-        t2_td = sts[1]['td-weights']
-        t3_td = sts[2]['td-weights']
-        
-        for i in range(len(sts)):
-            nameStore[sts[i]['stim-type-item']] = (i+1) 
-
-        for i in range(len(vos)):
-            x[i] = vos[i]['vis-objs-item-X']
-            y[i] = vos[i]['vis-objs-item-Y']
-            duration[i] = vos[i]['vis-objs-item-duration']
-            latency[i] = vos[i]['vis-objs-item-latency']
-            #Stype[i] = vos[i]['vis-objs-item-stim-type']
-            Stype[i] = nameStore[vos[i]['vis-objs-item-stim-type']]
 
         steps=int(runtime)
         videoinput=np.zeros((27,27,1)).astype(float) 
@@ -373,12 +343,12 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
         
         data = {}
         # data["EV1"], data["EV2"], data["LV1"], data["LV2"], data["IG"], data["AM"], data["II1"], data["II2"], data["N2pc"],  = ragnaroc.Ragnaroc3C(x, y, t1_bu, t2_bu, t3_bu, t1_td, t2_td, t2_td,latency, duration, Stype,steps,videoinput)
-        # data["EV" + str(sts[0]['stim-type-item'])], data["EV" + str(sts[1]['stim-type-item'])], data["LV" + str(sts[0]['stim-type-item'])], data["LV" + str(sts[1]['stim-type-item'])], data["IG"], data["AM"], data["II" + str(sts[0]['stim-type-item'])], data["II" + str(sts[1]['stim-type-item'])], data["N2pc"],  = ragnaroc.Ragnaroc3C(x, y, t1_bu, t2_bu, t3_bu, t1_td, t2_td, t2_td,latency, duration, Stype,steps,videoinput)
+        # data["EV" + str(sts[0]['stimName'])], data["EV" + str(sts[1]['stimName'])], data["LV" + str(sts[0]['stimName'])], data["LV" + str(sts[1]['stimName'])], data["IG"], data["AM"], data["II" + str(sts[0]['stimName'])], data["II" + str(sts[1]['stimName'])], data["N2pc"],  = ragnaroc.Ragnaroc3C(x, y, t1_bu, t2_bu, t3_bu, t1_td, t2_td, t2_td,latency, duration, Stype,steps,videoinput)
 
         
         # data = {}
         ogData = {}
-        ogData["EV" + str(sts[0]['stim-type-item'])], ogData["EV" + str(sts[1]['stim-type-item'])], ogData["EV" + str(sts[2]['stim-type-item'])], ogData["LV" + str(sts[0]['stim-type-item'])], ogData["LV" + str(sts[1]['stim-type-item'])], ogData["LV" + str(sts[2]['stim-type-item'])], ogData["IG"], ogData["AM"], ogData["II" + str(sts[0]['stim-type-item'])], ogData["II" + str(sts[1]['stim-type-item'])], ogData["II" + str(sts[2]['stim-type-item'])], ogData["N2pc"],  = ragnaroc.Ragnaroc3C(x, y, t1_bu, t2_bu, t3_bu, t1_td, t2_td, t3_td,latency, duration, Stype,steps,videoinput)
+        ogData["EV"], ogData["LV"], ogData["IG"], ogData["AM"], ogData["II"], ogData["N2pc"], ogData["stimMap"]  = ragnaroc.runTrial(vos, sts, steps, videoinput)
 
 
         # print(ogData["IG"])
@@ -388,19 +358,35 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
         # EE = 30, EI = -10
         payload = 0
         
+        # stim, time, x, y
         #for map in data.keys():
+        # for map in ogData.keys():
+        #     if(map in ["EV", "LV", "II"]):
+        #         data[map] = np.zeros((len(sts) +1, steps, 27, 27))
+        #         for j in range(0, len(sts)):
+        #             data[map][j] = (ogData[map][j] + 10) * (255/40)
+        #         data[map] = data[map].astype(np.uint8)
+        #     elif (map != "stimMap"):
+        #         print(map)
+        #         #print(ogData[map])
+        #         data[map] = (ogData[map] + 10) * (255/40)
+        #         data[map] = data[map].astype(np.uint8)
+        #     if(map != "stimMap"):
+        #         payload += sys.getsizeof(data[map])
+
         for map in ogData.keys():
-            data[map] = (ogData[map] + 10) * (255/40)
-            data[map] = data[map].astype(np.uint8)
-            payload += sys.getsizeof(data[map])
+            if (map != "stimMap"):
+                data[map] = (ogData[map] + 10) * (255/40)
+                data[map] = data[map].astype(np.uint8)
+                payload += sys.getsizeof(data[map])
         
         print("Total simulation data: {} Bytes".format(payload))
 
         ogData["runtime"]=steps
         data["runtime"]=steps
-        #saveResults(EV1,EV2,LV1,LV2,IG,AM,II1,II2,N2pc)
+        data['stimMap'] = ogData['stimMap']
 
-        return ogData, data, False, "", sts[0]['stim-type-item'] , {'display':'flex'}, openSavedAlert
+        return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert
     
     elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
         #Open Modal to enter creator name. Once entered, add to DB. 	
@@ -436,21 +422,31 @@ def loadingGraph(stim, map, store, surfaceFig):
         currTimePos = surfaceFig['layout']['sliders'][0]['active']
     
     # Stim only applies to EV, LV and II
-    if map == "AM" or map == "IG":
-        stim = ""
+    fig={}
 
     try:
         stim = str(stim)
         # print(map+stim)
-        fig = {
-            'data': [go.Surface(z=store[map+stim][:,:,currTimePos], colorscale="Hot", showscale=False, name=map+stim)],
-            'layout': getSurfaceGraphLayout(currTimePos, store["runtime"]),
-            'frames': [
-                go.Frame(
-                    data=[go.Surface(z=store[map+stim][:,:,k], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
-                    for k in range(0,store["runtime"])
-            ],
-        }
+        if(map == "AM" or map == "IG"):
+            fig = {
+                'data': [go.Surface(z=store[map][currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
+                'layout': getSurfaceGraphLayout(currTimePos, store["runtime"]),
+                'frames': [
+                    go.Frame(
+                        data=[go.Surface(z=store[map][k,:,:], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
+                        for k in range(0,store["runtime"])
+                ],
+            }
+        else:
+            fig = {
+                'data': [go.Surface(z=store[map][store["stimMap"][stim],currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
+                'layout': getSurfaceGraphLayout(currTimePos, store["runtime"]),
+                'frames': [
+                    go.Frame(
+                        data=[go.Surface(z=store[map][store["stimMap"][stim], k,:,:], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
+                        for k in range(0,store["runtime"])
+                ],
+            }
 
         
     except Exception as ex:
@@ -520,7 +516,7 @@ def updateLineGraphs(clickData, stim, timePoint, store):
 
         for k in ["IG","AM"]:
             figs.add_trace(
-                go.Scatter(x=timeline, y=store[k][yPos,xPos,:], mode='lines', name=k), row=figCount, col=1,
+                go.Scatter(x=timeline, y=store[k][:, yPos,xPos], mode='lines', name=k), row=figCount, col=1,
             )
             figs.update_xaxes(showgrid=False, showticklabels=False, row=figCount, col=1) #fixedrange=True
             figs.update_yaxes(showgrid=False, showticklabels=False, range=[-10,40], row=figCount, col=1)
@@ -534,7 +530,7 @@ def updateLineGraphs(clickData, stim, timePoint, store):
             for k in ["II","LV","EV"]:
                 stim = str(stim)
                 figs.add_trace(
-                    go.Scatter(x=timeline, y=store[k+stim][yPos,xPos,:], mode='lines', name=k+" "+stim), row=figCount, col=1,
+                    go.Scatter(x=timeline, y=store[k][store["stimMap"][stim], :,yPos,xPos], mode='lines', name=k+" "+stim), row=figCount, col=1,
                 )
                 figs.update_xaxes(showgrid=False, showticklabels=False, row=figCount, col=1)
                 figs.update_yaxes(showgrid=False, showticklabels=False, range=[-10,40], row=figCount, col=1)
@@ -761,6 +757,6 @@ def saveExp(creator, expName, runtime, stimTypes, visObjs):
 
 if __name__ == '__main__':
     # app.run_server()
-    # app.run_server(debug=True)
+    app.run_server(debug=True)
     # app.run_server(debug=True,port=8080)
-    application.run_server(debug=True,port=8080)
+    # application.run_server(debug=True,port=8080)

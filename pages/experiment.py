@@ -365,15 +365,15 @@ def getStimulusTable():
                 columns=[
                     {
                         'name': 'Stimulus name',
-                        'id': 'stim-type-item',
+                        'id': 'stimName',
                     },
                     {
                         'name': 'Top Down',
-                        'id': 'td-weights',
+                        'id': 'td',
                     },
                     {
                         'name': 'Bottom Up',
-                        'id': 'bu-weights',
+                        'id': 'bu',
                     }
                 ],
                 #data=[{'stim-type-item': 1, 'td-weights': 1, 'bu-weights': 1 }]
@@ -428,27 +428,27 @@ def getVisualObjectsTable():
                 columns=[
                     {
                         'name': 'Name',
-                        'id': 'vis-objs-item',
+                        'id': 'name',
                     },
                     {
                         'name': 'X',
-                        'id': 'vis-objs-item-X',
+                        'id': 'X',
                     },
                     {
                         'name': 'Y',
-                        'id': 'vis-objs-item-Y',
+                        'id': 'Y',
                     },
                     {
                         'name': 'Duration',
-                        'id': 'vis-objs-item-duration',
+                        'id': 'duration',
                     },
                     {
                         'name': 'Latency',
-                        'id': 'vis-objs-item-latency',
+                        'id': 'latency',
                     },
                     {
                         'name': 'Stimulus',
-                        'id': 'vis-objs-item-stim-type',
+                        'id': 'stimulus',
                     }
                 ],
                 data=[],
@@ -999,7 +999,7 @@ def serve_layout(app):
                 # html.H1('Results ', style={"color": "White", "fontFamily": "Playfair Display, serif", "margin":"3rem"}),
                 html.Div(
                     children=[
-                        html.H1('Results ', style={"color": "White", "fontFamily": "Norse", "margin":"3rem"}), #Playfair Display, serif | Norse
+                        html.H1('Results ', style={"color": "White", "fontFamily": "Norse", "margin":"3rem", "font-size":"3rem"}), #Playfair Display, serif | Norse
                         html.H1(' ? ', id="result-info", style={"fontFamily": "Playfair Display, serif", "margin":"3rem", "paddingRight":"2rem"}),
                     ],
                     style={
