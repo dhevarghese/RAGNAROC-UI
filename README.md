@@ -8,9 +8,9 @@ Current Status: Setup your experiments on a text based input interface. These wo
 Check out the website [here](http://ragnaroc.us-east-1.elasticbeanstalk.com/)
 
 # Features to be added
- - Eye movements
- - Experiment simulation
- - Optimising model
+- [ ] Eye movements
+- [ ] Experiment simulation
+- [x] Optimised Ragnaroc
 
 # Contribution
 
