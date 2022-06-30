@@ -189,7 +189,7 @@
     background-color: #131417; /*  Colors - #131417, #2f394f */
     /* display: flex; */ 
     flex-direction: column;
-    padding: 1rem 2rem 2rem;
+    padding: 2.2rem 2rem 3rem;
 }
 /*
 .menulayer{
@@ -359,7 +359,7 @@ html, body {
 #title {
     font-family: "Playfair Display", serif;
     font-weight: normal;
-    font-size: 2rem;
+    font-size: 3rem; /* was 2rem */
     margin-left: 2rem;
     color: white;
 }
