@@ -1,5 +1,7 @@
-import os
-import pickle
+"""
+    AUTHOR: DHEERAJ V
+"""
+
 import sys
 import numpy as np
 
@@ -11,9 +13,7 @@ import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-# from model import ragnaroc
 import ragnaroc
-
 from pages import experiment, index
 
 import boto3
@@ -30,6 +30,9 @@ app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=ext
 app.title='Ragnaroc'
 application = app.server
 
+# Ideally, all callbacks should be in a separate file or in a file with the appropriate element. But, as we require the app variable (Due to the use of Dash-extensions, to 
+# save variables), I've defined all over here.
+
 client = boto3.client(
     'dynamodb',
     aws_access_key_id='REMOVED-AWS-ACCESS-KEY-ID',
@@ -44,6 +47,8 @@ dynamodb = boto3.resource(
     )
 ddb_exceptions = client.exceptions
 
+
+## Workaround for multi-page Dash app 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
@@ -59,11 +64,12 @@ def display_page(pathname):
     else:
         return '404'
 
-### Callbacks for the main code
+## Callbacks for the entire application
 
 @app.callback(Output('stim-table', 'style'), Output('vo-table', 'style'),
               Input('exp-form-tabs', 'value'))
 def render_content(tab):
+    """ Update style depending on selected tab."""
     styleDisplay = {
         "display": "block",
         "marginTop": "6rem",
@@ -95,6 +101,7 @@ def render_content(tab):
     ],
 )
 def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimType, isOpen):
+    """ Add visual object details to the data table. The details are added by provided input or preset. If invalid data is provided, the user is alerted"""
     ctx = callback_context
     openAlert = False
     duplicateObj = False
@@ -123,13 +130,15 @@ def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimT
 
     elif (inputId == "preset-experiment-choice" and preset != None):
         presetType = ctx.triggered[0]['value'].split('.')[0]
-        rows = getExperimentVisualObjectPresets(presetType)
+        rows = getVisualObjectPreset(presetType)
+
     elif (inputId == "input-alerts"):
         openAlert = isOpen
     
     return rows, openAlert, duplicateObj
 
-def getExperimentVisualObjectPresets(presetType):
+def getVisualObjectPreset(presetType):
+    """ Helper function to load Visual Objects for preset trials. """
     preset = []
     if(presetType == "Brisson"):
         preset.append({'name': "1", 'X': 7, 'Y': 14, 'duration': 100, 'latency': 0, 'stimulus': "1"})
@@ -155,7 +164,8 @@ def getExperimentVisualObjectPresets(presetType):
     Input("text-td-weight", "value"),
     Input("top-down", "value"),
 )
-def callback(input_value, slider_value):
+def tdUpdate(input_value, slider_value):
+    """ Simultaneously update the text/slider for top-down weights. """
     ## https://dash.plotly.com/advanced-callbacks
     ctx = callback_context
     trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
@@ -168,7 +178,8 @@ def callback(input_value, slider_value):
     Input("text-bu-weight", "value"),
     Input("bottom-up", "value"),
 )
-def callback(input_value, slider_value):
+def buUpdate(input_value, slider_value):
+    """ Simultaneously update the text/slider for bottom-up weights. """
     ## https://dash.plotly.com/advanced-callbacks
     ctx = callback_context
     trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
@@ -185,6 +196,8 @@ def callback(input_value, slider_value):
     prevent_initial_call=True,
 )
 def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, maxStimuliReached):
+    """ Add Stimulus Type details to the data table. The details are added by provided input or preset. If invalid data is provided, the user is alerted"""
+
     ctx = callback_context
     openAlert = False
     maxStimuliReached = False
@@ -199,29 +212,26 @@ def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, ma
             raise PreventUpdate
         
         openAlert = (name=="") or (tdWeight > 1) or (tdWeight < 0) or (buWeight > 1) or (buWeight < 0) 
-        maxStimuliReached = (len(rows) > 2)
 
         for i in range(len(rows)):
             if(rows[i]["stimName"] == name):
                 duplicateStimulus = True
                 break
 
-        # if openAlert:
-        #     style["borderBottomColor"] = "red"
-        #if(n_clicks>0 and (name!="") and (tdWeight <= 1) and (tdWeight >= 0) and (buWeight <= 1) and (buWeight >= 0) ):
-        if(n_clicks>0 and not openAlert and not maxStimuliReached and not duplicateStimulus):
-            #stimTypes.append(StimulusTypes(buWeight,tdWeight))
-            #rows.append({'stimName': (1 if rows==None else len(rows)+1), 'td': tdWeight, 'bu': buWeight})
+        if(n_clicks>0 and not openAlert and not duplicateStimulus):
             rows.append({'stimName': name, 'td': tdWeight, 'bu': buWeight})
+
     elif (inputId == "preset-experiment-choice" and preset != None):
         presetType = ctx.triggered[0]['value'].split('.')[0]
-        rows = getExperimentStimulusTypesPresets(presetType)
+        rows = getStimulusTypesPreset(presetType)
+
     elif (inputId == "input-alerts"):
         openAlert = isOpen
 
     return rows, openAlert, maxStimuliReached, duplicateStimulus #, style
 
-def getExperimentStimulusTypesPresets(presetType):
+def getStimulusTypesPreset(presetType):
+    """ Helper function to load Stimulus Types for preset trials. """
     preset = []
     if(presetType == "Brisson"):
         preset.append({'stimName': "1", 'td': 0.4, 'bu': 0.6})
@@ -270,11 +280,14 @@ def deleteStimulus(previous, current, vos):
     ],
 )
 def setPresetRuntime(preset):
+    """ All preset trials run for 600 ms. """
     if (preset!=""):
         time = 0
         if(preset):
             time=600
         return time
+    else:
+        raise PreventUpdate 
 
 @app.callback(
     Output('vis-obj-stim-type','options'),
@@ -283,16 +296,21 @@ def setPresetRuntime(preset):
         Input('stim-types-table','data')
     ]
 )
-def updateStimulusTypeDropDown(rows):
+def updateStimulusTypeDropdown(rows):
+    """ Callback to include user defined stimuli in the dropdown. """
     opts = [row['stimName'] for row in rows]
     return opts, opts
-    #To remove visual objects on removing a stimulus type -> Callback output VO table data. Loop through the rows, remove the row with an unknown name.
-    #At the moment this is a rather... slow implementation
 
 @app.callback(
-    ServersideOutput("original-store", "data"), ServersideOutput("sim-store", "data"), EnrichedOutput("run-sim-alert", "is_open"), EnrichedOutput("run-sim-alert", "children"), EnrichedOutput('stim-type-dropdown','value'), EnrichedOutput("results-visual", "style"), EnrichedOutput("save-alert", "is_open"), 
+    ServersideOutput("original-store", "data"), 
+    ServersideOutput("sim-store", "data"), 
+    EnrichedOutput("run-sim-alert", "is_open"), 
+    EnrichedOutput("run-sim-alert", "children"), 
+    EnrichedOutput('stim-type-dropdown','value'), 
+    EnrichedOutput("results-visual", "style"), 
+    EnrichedOutput("save-alert", "is_open"), 
     [
-        Input('run-sim','n_clicks'),  Input("save-creator-exp","n_clicks"), #Input("save-exp","n_clicks"), 
+        Input('run-sim','n_clicks'),  Input("save-creator-exp","n_clicks"),
     ],
     [
         State('stim-types-table','data'),
@@ -306,10 +324,18 @@ def updateStimulusTypeDropDown(rows):
         State("save-alert", "is_open"),
     ],
     prevent_initial_call=True,
-    memoize=True
+    # memoize=True #Commenting as memoizing causes errors when cron job executes.
 )
 def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, data, ogData, creator, openSavedAlert):
-    #ragnaroc.Ragnaroc3C(x, y, Type1BottomUp, Type2BottomUp, Type3BottomUp, Type1TopDown, Type2TopDown, Type3TopDown,latency, duration, Stype,steps,videoinput)
+    """ This callback performs input validation and calls the ragnaroc model. This is the core of the system. 
+        
+        Input: Stimulus Types, Visual Objects, runtime, name, run alert, data stores (sim & original), creator name, save alert.
+        Output: Original store, sim store, run alert (flag & children), -, results css, save alert
+
+        This callback also handles the save alert.
+    
+    """
+    
     inputId = ""
     ctx = callback_context
     data = data or {}
@@ -322,76 +348,51 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
             # Experiment name Alert
             return ogData, data, True, "Please set experiment name", None, {"display": "none"}, openSavedAlert
 
-    if(inputId == "run-sim"):
-        if(len(sts) == 0):
-            # Stimulus types alert
-            return ogData, data, True,"Please add stimulus types to the experiment", None, {"display": "none"}, openSavedAlert
+        if(inputId == "run-sim"):
+            if(len(sts) == 0):
+                # Stimulus types alert
+                return ogData, data, True,"Please add stimulus types to the experiment", None, {"display": "none"}, openSavedAlert
+            
+            if(len(vos) == 0):
+                # Visual Objects Alert
+                return ogData, data, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert
+
+            if(runtime == "" or runtime == None):
+                # Set runtime Alert
+                return ogData, data, True, "Please set runtime of experiment", None, {"display": "none"}, openSavedAlert
+
+            #Validated. 
+
+            steps = int(runtime)
+            videoinput = np.zeros((27,27,1)).astype(float) 
+
+            
+            data = {}
+            ogData = {}
+
+            ogData["EV"], ogData["LV"], ogData["IG"], ogData["AM"], ogData["II"], ogData["N2pc"], ogData["stimMap"]  = ragnaroc.runTrial(vos, sts, steps, videoinput)
+
+            #Normalize the data to the uint8 range (0-255)
+            # EE = 30, EI = -10
+            payload = 0
+            for map in ogData.keys():
+                if (map != "stimMap"):
+                    data[map] = (ogData[map] + 10) * (255/40)
+                    data[map] = data[map].astype(np.uint8)
+                    payload += sys.getsizeof(data[map])
+            
+            print("Total simulation data: {} Bytes".format(payload))
+
+            ogData["runtime"] = steps
+            data["runtime"] = steps
+            data['stimMap'] = ogData['stimMap']
+
+            return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert
         
-        if(len(vos) == 0):
-            # Visual Objects Alert
-            return ogData, data, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert
-
-        if(runtime == "" or runtime == None):
-            # Set runtime Alert
-            return ogData, data, True, "Please set runtime of experiment", None, {"display": "none"}, openSavedAlert
-
-        #Validated. 
-
-        steps=int(runtime)
-        videoinput=np.zeros((27,27,1)).astype(float) 
-
-        
-        data = {}
-        # data["EV1"], data["EV2"], data["LV1"], data["LV2"], data["IG"], data["AM"], data["II1"], data["II2"], data["N2pc"],  = ragnaroc.Ragnaroc3C(x, y, t1_bu, t2_bu, t3_bu, t1_td, t2_td, t2_td,latency, duration, Stype,steps,videoinput)
-        # data["EV" + str(sts[0]['stimName'])], data["EV" + str(sts[1]['stimName'])], data["LV" + str(sts[0]['stimName'])], data["LV" + str(sts[1]['stimName'])], data["IG"], data["AM"], data["II" + str(sts[0]['stimName'])], data["II" + str(sts[1]['stimName'])], data["N2pc"],  = ragnaroc.Ragnaroc3C(x, y, t1_bu, t2_bu, t3_bu, t1_td, t2_td, t2_td,latency, duration, Stype,steps,videoinput)
-
-        
-        # data = {}
-        ogData = {}
-        ogData["EV"], ogData["LV"], ogData["IG"], ogData["AM"], ogData["II"], ogData["N2pc"], ogData["stimMap"]  = ragnaroc.runTrial(vos, sts, steps, videoinput)
-
-
-        # print(ogData["IG"])
-        print(ogData["IG"].max())
-        print(len(np.unique(ogData["IG"])))
-        #Normalize the data to the uint8 range (0-255)
-        # EE = 30, EI = -10
-        payload = 0
-        
-        # stim, time, x, y
-        #for map in data.keys():
-        # for map in ogData.keys():
-        #     if(map in ["EV", "LV", "II"]):
-        #         data[map] = np.zeros((len(sts) +1, steps, 27, 27))
-        #         for j in range(0, len(sts)):
-        #             data[map][j] = (ogData[map][j] + 10) * (255/40)
-        #         data[map] = data[map].astype(np.uint8)
-        #     elif (map != "stimMap"):
-        #         print(map)
-        #         #print(ogData[map])
-        #         data[map] = (ogData[map] + 10) * (255/40)
-        #         data[map] = data[map].astype(np.uint8)
-        #     if(map != "stimMap"):
-        #         payload += sys.getsizeof(data[map])
-
-        for map in ogData.keys():
-            if (map != "stimMap"):
-                data[map] = (ogData[map] + 10) * (255/40)
-                data[map] = data[map].astype(np.uint8)
-                payload += sys.getsizeof(data[map])
-        
-        print("Total simulation data: {} Bytes".format(payload))
-
-        ogData["runtime"]=steps
-        data["runtime"]=steps
-        data['stimMap'] = ogData['stimMap']
-
-        return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert
-    
-    elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
-        #Open Modal to enter creator name. Once entered, add to DB. 	
-        openSavedAlert = saveExp(creator, expName, runtime, sts, vos)   	
-        #Close modal, open saved alert 	
+        elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
+            # Open Modal to enter creator name. Once entered, add to Database. 	
+            openSavedAlert = saveExp(creator, expName, runtime, sts, vos)   	
+            # Close modal, open saved alert 	
         	
     return {}, {}, isOpen, "", None, {"display": "none"}, openSavedAlert
 
@@ -409,11 +410,20 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
     prevent_initial_call=True,
 )
 def loadingGraph(stim, map, store, surfaceFig):
+    """ This callback sets up the data required for the surface plots. 
+        
+        Input: Stimulus drop down value, map drop down value, simulated store, surface figure
+        Output: Updated surface figure.
+
+        Fig consists of data, layout and frames. The frames are required to animate through the neural activations.
+    """
     if store is None or not store :
         print("Store: {}".format(store))
         raise PreventUpdate 
     
-    print("Loading Graph")
+    print("Loading Graph with {} map".format(map))
+    
+    # Set the time point of the animation
     currTimePos = 0
     if store["runtime"] > 200 :
         currTimePos = 200 
@@ -426,7 +436,6 @@ def loadingGraph(stim, map, store, surfaceFig):
 
     try:
         stim = str(stim)
-        # print(map+stim)
         if(map == "AM" or map == "IG"):
             fig = {
                 'data': [go.Surface(z=store[map][currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
@@ -447,7 +456,6 @@ def loadingGraph(stim, map, store, surfaceFig):
                         for k in range(0,store["runtime"])
                 ],
             }
-
         
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -455,9 +463,86 @@ def loadingGraph(stim, map, store, surfaceFig):
         print(message)
 
     # print("Figure payload: {} Bytes".format(sys.getsizeof(fig)))
-    # print("Figure data payload: {} Bytes".format(sys.getsizeof(fig["data"])))
-    # print("Figure frames payload: {} Bytes".format(sys.getsizeof(fig["frames"])))
     return fig
+
+def getSurfaceGraphLayout(currSliderVal=200, runtime=0):
+    """ Function to set the layout of the surface plots. """
+    return go.Layout(
+        template= "plotly_dark",
+        title = "Surface Plot",
+        scene = dict
+        (
+            aspectratio=dict(x=1,y=1,z=1),
+            xaxis = dict(title= dict(text = 'x', font = {"size" : 16}), range = [0,30], tickfont = dict(size=14),), #Modify the axes
+            yaxis = dict(title= dict(text = 'y', font = {"size" : 16}), range = [0,30], tickfont = dict(size=14)),
+            zaxis = dict(title= dict(text = 'z', font = {"size" : 16}), showticklabels=False, showgrid=False, zeroline=False, range = [0,256],),
+            camera = dict(
+                eye=dict(x=1.31, y=1.31, z=1.31)
+            ),
+        ),
+        width=700, height=600, 
+        #margin=dict(r=5, l=5, b=5, t=5), #paper_bgcolor='#fccd61',
+        updatemenus=[
+            {
+                "buttons": [
+                    {
+                        "args": [None, frame_args(1)], 
+                        "label": "&#9654;", # play symbol
+                        "method": "animate",
+                    },
+                    {
+                        "args": [[None], frame_args(0)],
+                        "label": "&#9724;", # pause symbol
+                        "method": "animate",
+                    },
+                ],
+                "direction": "left",
+                #"pad": {"r": 10, "t": 87},
+                "pad": {"r": 10, "t": 90, "l":10},
+                "showactive": True,
+                "type": "buttons",
+                "x": 0.1,
+                "xanchor": "right",
+                "y": 0.1,
+                "yanchor": "top",
+                # "visible": False,
+                "active" : 1,
+                "bgcolor" : "#fccd61",
+                "font" : {"color": "darkslateblue"},
+            },
+        ],
+        sliders = [
+            {
+                "pad": {"b": 10, "t": 20, "r":10},
+                # "len": 0.9,
+                "x": 0.1,
+                "y": 0,
+                # "visible": False,
+                "steps": [
+                    {
+                        "args": [[k], frame_args(0)],
+                        "label": str(k),
+                        "method": "animate",
+                    }
+                    for k in range(0,runtime+1)
+                ],
+                "name" : "res-slider",
+                "active": currSliderVal,
+                "currentvalue" : {
+                    "suffix" : " ms",
+                }
+            }
+        ], 
+    )
+
+def frame_args(duration):
+    # Parameters for the animation
+    return {
+            "frame": {"duration": duration},
+            "mode": "immediate",
+            "fromcurrent": True,
+            "transition": {"duration": duration, "easing": "linear"},
+        }
 
 @app.callback( 
     Output('line-viz','figure'),
@@ -467,18 +552,18 @@ def loadingGraph(stim, map, store, surfaceFig):
         Input('lineplot-time', 'value'),
     ],
     [
-        #State("sim-store", "data"),
         State("original-store", "data"),
     ],
     prevent_initial_call=True,
 )
 def updateLineGraphs(clickData, stim, timePoint, store):
-
+    """ Callback to update the line graphs of all activation maps according to surface plot clicks, change in stimuli or time marker. 
+        The line chart should show activations at x, y over 600 time steps. In plot, X axis is time, Y axis is the activations ([13][13]). 
+        We make subplots to show all the activation maps in a single plot.
+    """
+    
     # The line charts are dependant on click and stimulus type
-
-    # Store is 27 * 27 * 600
-    # The line chart should show activations at x,y over 600 time steps
-    # In plot, X axis is time, Y axis is the activations ([13][13])
+    # Store size is 600* 27 * 27 
     if store is None or not store :
         print("Original Store: {}".format(store))
         raise PreventUpdate 
@@ -487,21 +572,18 @@ def updateLineGraphs(clickData, stim, timePoint, store):
 
     try:
         runtime = store["runtime"]
-        timeline = np.arange(0,runtime+1,1)
-        # print("Checking timeline {}".format(timeline[-1]))
+        timeline = np.arange(0, runtime+1, 1)
+        
         xPos = 13
         yPos = 13
         if clickData:
             xPos = clickData['points'][0]['x']
             yPos = clickData['points'][0]['y']
 
-        #figs = {'data':[]}
-        # figs = go.Figure(data=[])
-
         figs = make_subplots(rows=6, cols=1,
                     shared_xaxes=True,
                     vertical_spacing=0.02)
-        figCount=1
+        figCount = 1
 
         figs.add_trace(
                 go.Scatter(x=timeline, y=store["N2pc"], mode='lines', name="EEG"), row=figCount, col=1,
@@ -551,89 +633,13 @@ def updateLineGraphs(clickData, stim, timePoint, store):
 
     return figs
 
-def frame_args(duration):
-    return {
-            "frame": {"duration": duration},
-            "mode": "immediate",
-            "fromcurrent": True,
-            "transition": {"duration": duration, "easing": "linear"},
-        }
-
-def getSurfaceGraphLayout(currSliderVal=200, runtime=0):
-    return go.Layout(
-        template= "plotly_dark",
-        title = "Surface Plot",
-        scene = dict
-        (
-            aspectratio=dict(x=1,y=1,z=1),
-            xaxis = dict(title= dict(text = 'x', font = {"size" : 16}), range = [0,30], tickfont = dict(size=14),), #Modify the axes
-            yaxis = dict(title= dict(text = 'y', font = {"size" : 16}), range = [0,30], tickfont = dict(size=14)),
-            zaxis = dict(title= dict(text = 'z', font = {"size" : 16}), showticklabels=False, showgrid=False, zeroline=False, range = [0,256],),
-            camera = dict(
-                eye=dict(x=1.31, y=1.31, z=1.31)
-            ),
-        ),
-        width=700, height=600, 
-        #margin=dict(r=5, l=5, b=5, t=5), #paper_bgcolor='#fccd61',
-        updatemenus=[
-            {
-                "buttons": [
-                    {
-                        "args": [None, frame_args(1)], #1, 100 ?
-                        "label": "&#9654;", # play symbol
-                        "method": "animate",
-                    },
-                    {
-                        "args": [[None], frame_args(0)],
-                        "label": "&#9724;", # pause symbol
-                        "method": "animate",
-                    },
-                ],
-                "direction": "left",
-                #"pad": {"r": 10, "t": 87},
-                "pad": {"r": 10, "t": 90, "l":10},
-                "showactive": True,
-                "type": "buttons",
-                "x": 0.1,
-                "xanchor": "right",
-                "y": 0.1,
-                "yanchor": "top",
-                # "visible": False,
-                "active" : 1,
-                "bgcolor" : "#fccd61",
-                "font" : {"color": "darkslateblue"},
-            },
-        ],
-        sliders = [
-            {
-                "pad": {"b": 10, "t": 20, "r":10},
-                # "len": 0.9,
-                "x": 0.1,
-                "y": 0,
-                # "visible": False,
-                "steps": [
-                    {
-                        "args": [[k], frame_args(0)],
-                        "label": str(k),
-                        "method": "animate",
-                    }
-                    for k in range(0,runtime+1)
-                ],
-                "name" : "res-slider",
-                "active": currSliderVal,
-                "currentvalue" : {
-                    "suffix" : " ms",
-                }
-            }
-        ], 
-    )
-
 @app.callback(
     Output("result-modal", "is_open"),
     [Input("result-info", "n_clicks")],
     [State("result-modal", "is_open")],
 )
 def toggle_modal(n1, is_open):
+    """Simple callback to open the modal for info/help on the results screen. """
     if n1:
         return not is_open
     return is_open
@@ -644,6 +650,7 @@ def toggle_modal(n1, is_open):
     [State("creator-modal", "is_open")],	
 )	
 def toggle_creator_modal(n1, n2, is_open):	
+    """Callback to open the modal for saving the trial. """
     if n1 or n2:	
         return not is_open	
     return is_open	
@@ -654,6 +661,7 @@ def toggle_creator_modal(n1, n2, is_open):
     [State("load-exp-modal", "is_open")],	
 )	
 def toggle_load_modal(n1, is_open):	
+    """Callback to open the modal for loading a trial. """
     if n1:	
         return not is_open	
     return is_open	
@@ -663,17 +671,15 @@ def toggle_load_modal(n1, is_open):
     [Input("load-exps-creator","value"),],	
     prevent_initial_call=True,
 )	
-def load_get_creator(creator):	
+def load_trial_names(creator):	
+    """Callback to query dynamoDB for all the trial names saved by the creator and update the dropdown options. """
     print("Loading creators")	
     # response = dynamodb.Table('ragnaroc-experiments').query(	
     #         KeyConditionExpression=Key('creator').eq(creator)	
     #     )	
     response = dynamodb.Table('ragnaroc-exp-names').scan(	
             FilterExpression= Attr("creator").eq(creator)	
-        )	
-    # {'label': 'Inhibitory Gate (IG)', 'value': 'IG'},	
-    # [{"label" : i["name"] , "value" : i["exp-id"]} for i in response["Items"]]	
-    # [i["name"] for i in response["Items"]]	
+        )
     return [{"label" : i["name"] , "value" : i["exp-id"]} for i in response["Items"]]	
 
 @app.callback(	
@@ -687,7 +693,8 @@ def load_get_creator(creator):
     [Input("load-creator-exp","n_clicks"),],	
     [State("loaded-exps-dropdown","value"),],	
 )	
-def load_exps(n1, expID):	
+def load_trials(n1, expID):	
+    """Callback to query dynamoDB for the trial selected by the user and update the data tables and other relevant information for the trial. """
     if n1 is None:
         raise PreventUpdate
 
@@ -697,6 +704,7 @@ def load_exps(n1, expID):
         )	
     return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False
 
+"""Clientside callback to scroll down to the results when the simulation completes. """
 app.clientside_callback(
     """
     function(style, elemid) {
@@ -713,19 +721,8 @@ app.clientside_callback(
     [State('surface-viz', 'id')]
 )
 
-def saveResults(EV1,EV2,LV1,LV2,IG,AM,II1,II2,N2pc):
-    #np.save('EV1',EV1)
-    np.save(os.path.join(os.getcwd(), 'data', 'EV1.npy'),EV1)
-    np.save('./data/EV2',EV2)
-    np.save('./data/LV1',LV1)
-    np.save('./data/LV2',LV2)
-    np.save('./data/IG',IG)
-    np.save('./data/AM',AM)
-    np.save('./data/II1',II1)
-    np.save('./data/II2',II2)
-    np.save('./data/N2pc',N2pc)
-
 def saveExp(creator, expName, runtime, stimTypes, visObjs):	
+    """Function to call dynamoDB and insert new trials. """
     try:	
         # JSON formatting	
         uid = uuid.uuid5(uuid.NAMESPACE_X500, creator+ "|" + expName+"|"+str(runtime))	
@@ -742,11 +739,11 @@ def saveExp(creator, expName, runtime, stimTypes, visObjs):
             "creator" : str(creator),	
             "name": str(expName),	
         }	
-        print("adding")	
+
         # Add to DynamoDB	
         dynamodb.Table('ragnaroc-experiments').put_item(Item=exp)	
         dynamodb.Table('ragnaroc-exp-names').put_item(Item=expName)	
-        print("added")	
+        print("Trial by {} added to dynamoDB".format(str(creator)))	
         return True	
         	
     except Exception as ex:	
@@ -756,6 +753,7 @@ def saveExp(creator, expName, runtime, stimTypes, visObjs):
         return False
 
 if __name__ == '__main__':
+    """The start point of the application. """
     # app.run_server()
     app.run_server(debug=True)
     # app.run_server(debug=True,port=8080)
