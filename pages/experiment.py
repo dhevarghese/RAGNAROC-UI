@@ -1,45 +1,18 @@
-import os
-import pickle
-import sys
-import numpy as np
-
 from dash import dcc, html, dash_table, callback_context
-from plotly.subplots import make_subplots
-from dash_extensions.enrich import Dash, Output, Input, State, ServersideOutput, Trigger, EnrichedOutput
-
 import plotly.graph_objects as go
-from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-
-# from model import ragnaroc
-import ragnaroc
 
 
 def stim_type_form():
     return html.Div(
         id="stim-type-form",
-        style={"color":"White", "marginLeft": "2.1rem", "marginRight": "2rem"},
         children=[
             html.P("Stimulus",style={"display":"inline"}),
-            #html.P("Stimulus Type",style={"color":"#EE4B2B", "display":"inline"}),
             dcc.Input(
                 id="stim-type-name",
                 placeholder='Name',
                 type='text',
-                # type='number',
-                # readOnly=True,
                 value='',
-                style=
-                {
-                    "color":"white",
-                    "marginLeft":"16px",
-                    "background": "transparent",
-                    "borderBottomColor": "white",
-                    "borderInlineStyle": "none",
-                    "padding":"4px",
-                    "borderRadius":"4px",
-                    "borderTop": "transparent",
-                }
             ),
 
             html.Div(children=[
@@ -49,35 +22,11 @@ def stim_type_form():
                         dcc.Input(
                             id="text-td-weight",
                             className="hideNumScroll",
-                            type='number',
-                            value=0.5,
-                            step=0.01,
-                            min=0, max=1,
-                            style=
-                            {
-                                "color":"white",
-                                "backgroundColor": "black",
-                                # "borderBottomColor": "white",
-                                # "borderInlineStyle": "none",
-                                "padding":"4px",
-                                "verticalAlign": "text-bottom",
-
-                                "borderRadius": "5rem",
-                                "border": "2px solid white",
-                                #"text-indent": "1.4rem",
-                                "width":"10%",
-                                "textAlign": "center",
-                            }
+                            type='number', value=0.5, step=0.01, min=0, max=1,
                         ),
                     ],
-                    style={
-                        "display": "flex",
-                        "alignItems": "center",
-                        "justifyContent": "space-between",
-                        "marginTop": "1rem",
-                    }
+                    id="stim-form-weights-div",
                 ),
-                
                 dcc.Slider(0,1,value=0.5, id="top-down", tooltip={"placement": "bottom", }, className="slider-margin"),
                 
                 html.Div(
@@ -86,64 +35,20 @@ def stim_type_form():
                         dcc.Input(
                             id="text-bu-weight",
                             className="hideNumScroll",
-                            type='number',
-                            value=0.5,
-                            step=0.01,
-                            min=0, max=1,
-                            style=
-                            {
-                                "color":"white",
-                                "backgroundColor": "black", # #272a31
-                                # "borderBottomColor": "white",
-                                # "borderInlineStyle": "none",
-                                "padding":"4px",
-                                "verticalAlign": "text-bottom",
-
-                                "borderRadius": "5rem", #0.5rem
-                                "border": "2px solid white", #none
-                                #"text-indent": "1.4rem",
-
-                                "width":"10%", #15%
-                                "textAlign": "center",
-                            }
+                            type='number', value=0.5, step=0.01, min=0, max=1,
                         ),
                     ],
-                    style={
-                        "display": "flex",
-                        "alignItems": "center",
-                        "justifyContent": "space-between",
-                        "marginTop": "1rem",
-                    }
+                    id="stim-form-weights-div",
                 ),
+                dcc.Slider(0,1,value=0.5, id="bottom-up", tooltip={"placement": "bottom", }, className="slider-margin"),
                 
-                dcc.Slider(0,1,value=0.5, id="bottom-up", tooltip={"placement": "bottom", }, className="slider-margin"), # "always_visible": True
-                html.Button(#"Add", 
+                html.Button(
                     html.I(className="fas fa-solid fa-plus"),
                     id="add-stim-type",
                     form="stim-type-form",
                     n_clicks=0,
-                    style={
-                            #"width": "30%", 
-                            "width": "20%", 
-                            "marginTop": "20px", 
-                            "marginBottom" : "1.5rem",
-                            "marginInline": "auto", 
-                            "display": "block", "border": "2px solid #fccd61", 
-                            "borderRadius": "8px", 
-                            "backgroundColor":"#fccd61", 
-                            "color": "darkslateblue", 
-                            "fontWeight": "bold"
-                        }
-                    ),
-                # html.Hr(
-                #     style={
-                #         "height": "2px",
-                #         "borderWidth": "0",
-                #         "margin": "2rem" #"1rem 1rem"
-                #     }
-                # ),
+                ),
             ], style={
-                # "marginLeft": "16px", "marginTop":"16px", "marginBottom":"8px"
                 "margin": "0rem 1rem 0.5rem"
             }), 
         ]

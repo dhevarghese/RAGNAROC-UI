@@ -1,0 +1,58 @@
+#stim-type-form{
+    color:white; 
+    margin-left: 2.1rem; 
+    margin-right: 2rem
+}
+#stim-type-name {
+    color:white;
+    margin-left: 16px;
+    background: transparent;
+    border-bottom-color: white;
+    border-inline-style: none;
+    padding: 4px;
+    border-radius: 4px;
+    border-top: transparent;
+}
+
+#text-td-weight {
+    color:white;
+    background-color: black;
+    padding:4px;
+    vertical-align: text-bottom;
+
+    border-radius: 5rem;
+    border: 2px solid white;
+    width:10%;
+    text-align: center;
+}
+
+#text-bu-weight {
+    color:white;
+    background-color: black;
+    padding:4px;
+    vertical-align: text-bottom;
+
+    border-radius: 5rem;
+    border: 2px solid white;
+    width:10%;
+    text-align: center;
+}
+
+#stim-form-weights-div{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+#add-stim-type {
+    width: 20%; 
+    margin-top: 20px; 
+    margin-bottom : 1.5rem;
+    margin-inline: auto; 
+    display: block; border: 2px solid #fccd61; 
+    border-radius: 8px; 
+    background-color:#fccd61; 
+    color: darkslateblue; 
+    font-weight: bold
+}
