@@ -1,6 +1,5 @@
-from dash import dcc, html, Input, Output, callback
+from dash import dcc, html
 import dash_bootstrap_components as dbc
-from dash_extensions import Lottie
 
 def serve_layout(app):
     return html.Div(
@@ -11,43 +10,27 @@ def serve_layout(app):
                 id="home-container",
                 children=[
                     # Banner display
-                    html.Div(
-                        id="banner",
-                        children=[
-                            html.Img(
-                                id="logo", src=app.get_asset_url("logo.png")
-                            ),
-                            html.H2("Ragnaroc", id="title", style={"font-family":"Norse", "marginTop":"1rem",}),
-                        ],
-                    ),
-                    getRagnarocDetailsDiv()[0],
+                    banner(app),
+                    RagnarocDetailsDiv(),
                     # Link to the trial section of the portal
-                    dcc.Link(
-                        children=[
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [
-                                            dbc.Button(
-                                                "Let's run an experiment",
-                                                id="goto-exp",
-                                                color="warning",
-                                            ),
-                                        ],
-                                        className="d-grid gap-2 col-6 mx-auto",
-                                    ),
-                                ],
-                            ),
-                        ],
-                        href="/ragnaroc",
-                        style = {"textDecoration":"none"},
-                    ),
+                    experimentLink(),
                 ],
             ),
         ]
     )
 
-def getRagnarocDetailsDiv():
+def banner(app):
+    return html.Div(
+        id="banner",
+        children=[
+            html.Img(
+                id="logo", src=app.get_asset_url("logo.png")
+            ),
+            html.H2("Ragnaroc", id="title", style={"font-family":"Norse", "marginTop":"1rem",}),
+        ],
+    )
+
+def RagnarocDetailsDiv():
     # Detailed information about the project, aka, the actual body of the index page.
     return html.Div(
         id="ragnaroc-details",
@@ -57,14 +40,14 @@ def getRagnarocDetailsDiv():
                     html.P(
                         "A quintessential challenge for any perceptual system is the need to focus on task-relevant \
                         information without being blindsided by unexpected, yet important information. ",
-                        id="para-spacing",
+                        className="para-spacing",
                         style={"textAlign":"center",},
                     ), 
 
                     html.P("The human visual system incorporates several solutions to this challenge, one of which is a reflexive covert \
                         attention system that is rapidly responsive to both the physical salience and the task-relevance of \
                         new information.",
-                        id="para-spacing",
+                        className="para-spacing",
                         style={"textAlign":"center",},  
                     ),
 
@@ -74,7 +57,7 @@ def getRagnarocDetailsDiv():
                         distributed over a population of topographically organized neurons and serve to focus processing \
                         at one or more locations in the visual field, while inhibiting the processing of lower priority \
                         information.",
-                        id="para-spacing",
+                        className="para-spacing",
                         style={"textAlign":"justify",}, 
                     ),
 
@@ -86,7 +69,7 @@ def getRagnarocDetailsDiv():
                         accuracy, reaction time, and the N2pc and PD components of the EEG. This last contribution is \
                         the most crucial for repairing the disconnect that exists between our understanding of behavioral \
                         and neural correlates of attention. ",
-                        id="para-spacing",
+                        className="para-spacing",
                     ),
                     # Links to the paper and preprint.
                     html.Div(
@@ -94,14 +77,14 @@ def getRagnarocDetailsDiv():
                             html.A("Check the preprint here! ",
                                 href="https://www.biorxiv.org/content/10.1101/406124v4",
                                 target="_blank",
-                                id="para-spacing",
+                                className="para-spacing",
                                 style={"color":"yellow",},
                             ),  
 
                             html.A("Check the official psych review here! ",
                                 href="https://psycnet.apa.org/record/2020-58898-001",
                                 target="_blank",
-                                id="para-spacing",
+                                className="para-spacing",
                                 style={"color":"yellow",},
                             ),  
                         ], 
@@ -111,4 +94,26 @@ def getRagnarocDetailsDiv():
                 style={"color":"White",},
             ),
         ],
-    ),
+    )
+
+def experimentLink():
+    return dcc.Link(
+        children=[
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            dbc.Button(
+                                "Let's run an experiment",
+                                id="goto-exp",
+                                color="warning",
+                            ),
+                        ],
+                        className="d-grid gap-2 col-6 mx-auto",
+                    ),
+                ],
+            ),
+        ],
+        href="/ragnaroc",
+        style = {"textDecoration":"none"},
+    )
