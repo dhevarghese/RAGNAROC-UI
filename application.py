@@ -684,11 +684,14 @@ def toggle_load_modal(n1, is_open):
 )	
 def load_trial_names(creator):	
     """Callback to query dynamoDB for all the trial names saved by the creator and update the dropdown options. """
-    print("Loading creators")		
-    response = dynamodb.Table('ragnaroc-trial-names').query(	
-            KeyConditionExpression=Key('creator').eq(creator)	
-        )
-    return [{"label" : i["name"] , "value" : i["name"]} for i in response["Items"]]	
+    print("Loading creators")
+    if(creator and creator != ""):		
+        response = dynamodb.Table('ragnaroc-trial-names').query(	
+                KeyConditionExpression=Key('creator').eq(creator)	
+            )
+        return [{"label" : i["name"] , "value" : i["name"]} for i in response["Items"]]	
+    else:
+        raise PreventUpdate
 
 @app.callback(	
     [	
@@ -698,6 +701,8 @@ def load_trial_names(creator):
         Output('exp-name','value'),     	
         Output("load-exp-modal", "is_open"), 	
         Output("load-alert", "is_open"),
+        Output("loaded-exps-dropdown", "value"),
+        Output("load-exps-creator","value"),
     ],	
     [Input("load-creator-exp","n_clicks"),],	
     [State("loaded-exps-dropdown","value"), State("load-exps-creator","value"),],	
@@ -713,15 +718,15 @@ def load_trials(n1, name, creator):
                 KeyConditionExpression=Key('name').eq(name) & Key('creator').eq(creator)
             )	
         if("stimName" in response["Items"][0]["stimulus-types"][0] and "name" in response["Items"][0]["visual-objects"][0]):
-            return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False, False
+            return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False, False, None, None
         else:
-            return [], [], None, None, False, True
+            return [], [], None, None, False, True, None, None
 
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
-        return [], [], None, None, False, True
+        return [], [], None, None, False, True, None, None
 
 """Clientside callback to scroll down to the results when the simulation completes. """
 app.clientside_callback(
