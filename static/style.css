@@ -147,6 +147,14 @@
 #creator-modal > div {	
     border : 1px solid white;	
 }	
+
+#rewrite-modal > div > div.modal-header > button {	
+    background-color: white;	
+}	
+#rewrite-modal > div {	
+    border : 1px solid white;	
+}	
+
 #load-exp-modal > div > div.modal-header > button {	
     background-color: white;	
 }	

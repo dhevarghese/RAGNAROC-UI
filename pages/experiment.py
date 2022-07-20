@@ -43,6 +43,7 @@ def mainBody(app):
                             dcc.Store(id='sim-store'),
                             dcc.Store(id='original-store'),
                             saveModal(),
+                            rewriteModal(),
                             loadModal(),
                             simulationOperationButtons(),
                         ],
@@ -327,6 +328,39 @@ def saveModal():
         is_open=False,
     )
 
+def rewriteModal():
+    return dbc.Modal(
+        [
+            dbc.ModalHeader( dbc.ModalTitle("But, who are you?"), className="sl-modal-header",),
+            dbc.ModalBody(
+                className="sl-modal-body",
+                children=[
+                    html.P("This experiment name already exists in our records, in your name. Would you like to rewrite the setup?"),
+                    html.Div(
+                        [
+                            dbc.Button(
+                                children = ["Yes"],
+                                id="rewrite-accept",
+                                className="sl-button",
+                                color="warning",
+                            ),
+                            dbc.Button(
+                                children = ["No"],
+                                id="rewrite-deny",
+                                className="sl-button",
+                                color="warning",
+                            ),
+                        ],
+                        className="d-grid gap-2 col-3 mx-auto",
+                    ),
+                ], 
+            ),
+        ],
+        id="rewrite-modal",
+        centered=True,
+        is_open=False,
+    )
+
 def loadModal():
     return dbc.Modal(
         [
@@ -466,7 +500,7 @@ def alerts():
             is_open=False,
             fade=True,
             duration=4000,
-            color="danger",
+            color="warning",
             style={"margin":"0", "padding":"0.80rem"},
         ),
         dbc.Alert(
@@ -484,7 +518,7 @@ def alerts():
             is_open=False,
             fade=True,
             duration=4000,
-            color="danger",
+            color="warning",
             style={"margin":"0", "padding":"0.80rem"},
         ),
         dbc.Alert(
@@ -494,6 +528,24 @@ def alerts():
             fade=True,
             duration=4000,
             color="danger",
+            style={"margin":"0", "padding":"0.80rem"},
+        ),
+        dbc.Alert(
+            "An error occured while loading the requested experiment...",
+            id="load-alert",
+            is_open=False,
+            fade=True,
+            duration=4000,
+            color="danger",
+            style={"margin":"0", "padding":"0.80rem"},
+        ),
+        dbc.Alert(
+            "Experiment name already exists. Please use another name!",
+            id="trial-dup-alert",
+            is_open=False,
+            fade=True,
+            duration=4000,
+            color="warning",
             style={"margin":"0", "padding":"0.80rem"},
         ),
     ]
