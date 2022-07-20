@@ -706,6 +706,7 @@ def load_trial_names(creator):
         Output("load-alert", "is_open"),
         Output("loaded-exps-dropdown", "value"),
         Output("load-exps-creator","value"),
+        Output("results-visual", "style"), 
     ],	
     [Input("load-creator-exp","n_clicks"),],	
     [State("loaded-exps-dropdown","value"), State("load-exps-creator","value"),],	
@@ -721,15 +722,15 @@ def load_trials(n1, name, creator):
                 KeyConditionExpression=Key('name').eq(name) & Key('creator').eq(creator)
             )	
         if("stimName" in response["Items"][0]["stimulus-types"][0] and "name" in response["Items"][0]["visual-objects"][0]):
-            return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False, False, None, None
+            return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False, False, None, None, {"display": "none"}
         else:
-            return [], [], None, None, False, True, None, None
+            return [], [], None, None, False, True, None, None, {"display": "none"}
 
     except Exception as ex:
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
-        return [], [], None, None, False, True, None, None
+        return [], [], None, None, False, True, None, None, {"display": "none"}
 
 """Clientside callback to scroll down to the results when the simulation completes. """
 app.clientside_callback(
