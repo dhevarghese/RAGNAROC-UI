@@ -435,6 +435,9 @@ def loadingGraph(stim, map, store, surfaceFig):
         print("Store: {}".format(store))
         raise PreventUpdate 
     
+    if map is None or stim is None:
+        raise PreventUpdate 
+    
     print("Loading Graph with {} map".format(map))
     
     # Set the time point of the animation
@@ -578,8 +581,11 @@ def updateLineGraphs(clickData, stim, timePoint, store):
     
     # The line charts are dependant on click and stimulus type
     # Store size is 600* 27 * 27 
-    if store is None or not store :
+    if store is None or not store:
         print("Original Store: {}".format(store))
+        raise PreventUpdate 
+    
+    if stim is None:
         raise PreventUpdate 
 
     print("Loading line graphs")
