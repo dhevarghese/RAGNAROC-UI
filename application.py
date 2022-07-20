@@ -84,7 +84,7 @@ def render_content(tab):
         return styleHide, styleDisplay
 
 @app.callback(
-    Output('vis-objs-table','data'), Output("vo-alert", "is_open"), Output("vo-dup-alert", "is_open"),
+    EnrichedOutput('vis-objs-table','data'), EnrichedOutput("vo-alert", "is_open"), EnrichedOutput("vo-dup-alert", "is_open"), EnrichedOutput("results-visual", "style"), 
     [
         Input('vis-obj-add','n_clicks'), 
         Input('preset-experiment-choice','value'),
@@ -135,7 +135,7 @@ def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimT
     elif (inputId == "input-alerts"):
         openAlert = isOpen
     
-    return rows, openAlert, duplicateObj
+    return rows, openAlert, duplicateObj, {"display": "none"}
 
 def getVisualObjectPreset(presetType):
     """ Helper function to load Visual Objects for preset trials. """
@@ -343,6 +343,9 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
     ogData = ogData or {}
     openSavedAlert = False
     openRewrite = False
+
+    if(clicks == None and saveClick == None and rewriteClick == None and rewriteDeny == None):
+        return ogData, data, False, "", None, {"display": "none"}, openSavedAlert, openRewrite
 
     if ctx.triggered:
         inputId = ctx.triggered[0]['prop_id'].split('.')[0]
