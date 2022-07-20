@@ -358,7 +358,7 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
             # Visual Objects Alert
             return ogData, data, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
-        elif(runtime == "" or runtime == None or runtime < 1 or type(runtime) != int):
+        elif(runtime == "" or runtime == None or int(runtime) < 1):
             # Set runtime Alert
             return ogData, data, True, "Please set an appropriate runtime for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
@@ -393,14 +393,14 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
         
         elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
             # Open Modal to enter creator name. Once entered, add to Database. 
-            saved = saveExp(creator, expName, runtime, sts, vos)  
+            saved = saveExp(creator, expName, runtime, sts, vos, False)  
             if(saved):
                 openSavedAlert = True
             else:
                 openRewrite = True
         
         elif (inputId == "rewrite-accept"):	 
-            openSavedAlert = saveExp(creator, expName, runtime, sts, vos)  	
+            openSavedAlert = saveExp(creator, expName, runtime, sts, vos, True)  	
         
         elif (inputId == "rewrite-deny"):	 
             return ogData, data, False, "", None, {"display": "none"}, openSavedAlert, False
@@ -745,12 +745,12 @@ app.clientside_callback(
     [State('surface-viz', 'id')]
 )
 
-def saveExp(creator, expName, runtime, stimTypes, visObjs):	
+def saveExp(creator, expName, runtime, stimTypes, visObjs, rewrite):	
     """Function to call dynamoDB and insert new trials. """
     try:	
         # Check if experiment with same name exists
         response = dynamodb.Table('ragnaroc-trial-names').get_item(Key={'name':expName, 'creator':creator})	
-        if("Item" in response):
+        if("Item" in response and not rewrite):
             return False
 
         exp = {		
