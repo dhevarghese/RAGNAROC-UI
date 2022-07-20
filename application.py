@@ -308,9 +308,10 @@ def updateStimulusTypeDropdown(rows):
     EnrichedOutput("run-sim-alert", "children"), 
     EnrichedOutput('stim-type-dropdown','value'), 
     EnrichedOutput("results-visual", "style"), 
-    EnrichedOutput("save-alert", "is_open"), 
+    EnrichedOutput("save-alert", "is_open"),
+    EnrichedOutput("rewrite-modal", "is_open"),	
     [
-        Input('run-sim','n_clicks'),  Input("save-creator-exp","n_clicks"),
+        Input('run-sim','n_clicks'),  Input("save-creator-exp","n_clicks"), Input("rewrite-accept","n_clicks"), Input("rewrite-deny", "n_clicks"),
     ],
     [
         State('stim-types-table','data'),
@@ -326,7 +327,7 @@ def updateStimulusTypeDropdown(rows):
     prevent_initial_call=True,
     # memoize=True #Commenting as memoizing causes errors when cron job executes.
 )
-def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, data, ogData, creator, openSavedAlert):
+def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos, runtime, expName, isOpen, data, ogData, creator, openSavedAlert):
     """ This callback performs input validation and calls the ragnaroc model. This is the core of the system. 
         
         Input: Stimulus Types, Visual Objects, runtime, name, run alert, data stores (sim & original), creator name, save alert.
@@ -341,28 +342,29 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
     data = data or {}
     ogData = ogData or {}
     openSavedAlert = False
+    openRewrite = False
 
     if ctx.triggered:
         inputId = ctx.triggered[0]['prop_id'].split('.')[0]
         if(expName == "" or expName == None):
             # Experiment name Alert
-            return ogData, data, True, "Please set experiment name", None, {"display": "none"}, openSavedAlert
+            return ogData, data, True, "Please set experiment name", None, {"display": "none"}, openSavedAlert, openRewrite
+
+        elif(len(sts) == 0):
+            # Stimulus types alert
+            return ogData, data, True,"Please add stimulus types to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+        
+        elif(len(vos) == 0):
+            # Visual Objects Alert
+            return ogData, data, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+
+        elif(runtime == "" or runtime == None or runtime < 1 or type(runtime) != int):
+            # Set runtime Alert
+            return ogData, data, True, "Please set an appropriate runtime for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+
+        #Validated. 
 
         if(inputId == "run-sim"):
-            if(len(sts) == 0):
-                # Stimulus types alert
-                return ogData, data, True,"Please add stimulus types to the experiment", None, {"display": "none"}, openSavedAlert
-            
-            if(len(vos) == 0):
-                # Visual Objects Alert
-                return ogData, data, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert
-
-            if(runtime == "" or runtime == None):
-                # Set runtime Alert
-                return ogData, data, True, "Please set runtime of experiment", None, {"display": "none"}, openSavedAlert
-
-            #Validated. 
-
             steps = int(runtime)
             videoinput = np.zeros((27,27,1)).astype(float) 
 
@@ -387,14 +389,23 @@ def simulationOperations(clicks, saveClick, sts, vos, runtime, expName, isOpen, 
             data["runtime"] = steps
             data['stimMap'] = ogData['stimMap']
 
-            return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert
+            return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert, openRewrite
         
         elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
-            # Open Modal to enter creator name. Once entered, add to Database. 	
-            openSavedAlert = saveExp(creator, expName, runtime, sts, vos)   	
-            # Close modal, open saved alert 	
+            # Open Modal to enter creator name. Once entered, add to Database. 
+            saved = saveExp(creator, expName, runtime, sts, vos)  
+            if(saved):
+                openSavedAlert = True
+            else:
+                openRewrite = True
+        
+        elif (inputId == "rewrite-accept"):	 
+            openSavedAlert = saveExp(creator, expName, runtime, sts, vos)  	
+        
+        elif (inputId == "rewrite-deny"):	 
+            return ogData, data, False, "", None, {"display": "none"}, openSavedAlert, False
         	
-    return {}, {}, isOpen, "", None, {"display": "none"}, openSavedAlert
+    return {}, {}, isOpen, "", None, {"display": "none"}, openSavedAlert, openRewrite
 
 @app.callback( 
     Output('surface-viz','figure'), 
@@ -673,14 +684,11 @@ def toggle_load_modal(n1, is_open):
 )	
 def load_trial_names(creator):	
     """Callback to query dynamoDB for all the trial names saved by the creator and update the dropdown options. """
-    print("Loading creators")	
-    # response = dynamodb.Table('ragnaroc-experiments').query(	
-    #         KeyConditionExpression=Key('creator').eq(creator)	
-    #     )	
-    response = dynamodb.Table('ragnaroc-exp-names').scan(	
-            FilterExpression= Attr("creator").eq(creator)	
+    print("Loading creators")		
+    response = dynamodb.Table('ragnaroc-trial-names').query(	
+            KeyConditionExpression=Key('creator').eq(creator)	
         )
-    return [{"label" : i["name"] , "value" : i["exp-id"]} for i in response["Items"]]	
+    return [{"label" : i["name"] , "value" : i["name"]} for i in response["Items"]]	
 
 @app.callback(	
     [	
@@ -689,20 +697,31 @@ def load_trial_names(creator):
         Output('exp-total-time','value'),	
         Output('exp-name','value'),     	
         Output("load-exp-modal", "is_open"), 	
+        Output("load-alert", "is_open"),
     ],	
     [Input("load-creator-exp","n_clicks"),],	
-    [State("loaded-exps-dropdown","value"),],	
+    [State("loaded-exps-dropdown","value"), State("load-exps-creator","value"),],	
 )	
-def load_trials(n1, expID):	
+def load_trials(n1, name, creator):	
     """Callback to query dynamoDB for the trial selected by the user and update the data tables and other relevant information for the trial. """
     if n1 is None:
         raise PreventUpdate
+    
+    try:
+        print("Loading experiments") 
+        response = dynamodb.Table('ragnaroc-trials').query(	
+                KeyConditionExpression=Key('name').eq(name) & Key('creator').eq(creator)
+            )	
+        if("stimName" in response["Items"][0]["stimulus-types"][0] and "name" in response["Items"][0]["visual-objects"][0]):
+            return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False, False
+        else:
+            return [], [], None, None, False, True
 
-    print("Loading experiments")
-    response = dynamodb.Table('ragnaroc-experiments').query(	
-            KeyConditionExpression=Key('exp-id').eq(expID)	
-        )	
-    return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        print(message)
+        return [], [], None, None, False, True
 
 """Clientside callback to scroll down to the results when the simulation completes. """
 app.clientside_callback(
@@ -724,25 +743,25 @@ app.clientside_callback(
 def saveExp(creator, expName, runtime, stimTypes, visObjs):	
     """Function to call dynamoDB and insert new trials. """
     try:	
-        # JSON formatting	
-        uid = uuid.uuid5(uuid.NAMESPACE_X500, creator+ "|" + expName+"|"+str(runtime))	
-        exp = {	
-            "exp-id" : str(uid),	
+        # Check if experiment with same name exists
+        response = dynamodb.Table('ragnaroc-trial-names').get_item(Key={'name':expName, 'creator':creator})	
+        if("Item" in response):
+            return False
+
+        exp = {		
             "creator" : str(creator),	
             "name": str(expName),	
             "runtime": str(runtime),	
             "stimulus-types": json.loads(json.dumps(stimTypes), parse_float=Decimal),	
             "visual-objects" : json.loads(json.dumps(visObjs), parse_float=Decimal),	
         }	
-        expName = {	
-            "exp-id" : str(uid),	
+        expName = {		
             "creator" : str(creator),	
             "name": str(expName),	
         }	
-
         # Add to DynamoDB	
-        dynamodb.Table('ragnaroc-experiments').put_item(Item=exp)	
-        dynamodb.Table('ragnaroc-exp-names').put_item(Item=expName)	
+        dynamodb.Table('ragnaroc-trials').put_item(Item=exp)	
+        dynamodb.Table('ragnaroc-trial-names').put_item(Item=expName)	        
         print("Trial by {} added to dynamoDB".format(str(creator)))	
         return True	
         	
