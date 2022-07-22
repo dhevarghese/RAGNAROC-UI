@@ -445,14 +445,14 @@ def loadingGraph(stim, map, store, surfaceFig):
     if store["runtime"] > 200 :
         currTimePos = 200 
 
-    if('sliders' in surfaceFig['layout']):
-        currTimePos = surfaceFig['layout']['sliders'][0]['active']
-    
-    # Stim only applies to EV, LV and II
     fig={}
 
     try:
+        if('sliders' in surfaceFig['layout']):
+            currTimePos = surfaceFig['layout']['sliders'][0]['active']
+                
         stim = str(stim)
+        # Stim only applies to EV, LV and II
         if(map == "AM" or map == "IG"):
             fig = {
                 'data': [go.Surface(z=store[map][currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
@@ -478,6 +478,7 @@ def loadingGraph(stim, map, store, surfaceFig):
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
+        raise PreventUpdate 
 
     # print("Figure payload: {} Bytes".format(sys.getsizeof(fig)))
     return fig
@@ -650,6 +651,7 @@ def updateLineGraphs(clickData, stim, timePoint, store):
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
+        raise PreventUpdate 
 
     return figs
 
