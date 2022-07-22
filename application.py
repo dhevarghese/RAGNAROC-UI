@@ -187,7 +187,7 @@ def buUpdate(input_value, slider_value):
     return value, value
 
 @app.callback(
-    Output('stim-types-table','data'), Output("stim-alert", "is_open"), Output("stim-count-alert","is_open"), Output("stim-dup-alert","is_open"),  #Output("stim-type-name", "style"),
+    Output('stim-types-table','data'), Output("stim-alert", "is_open"), Output("stim-count-alert","is_open"), Output("stim-dup-alert","is_open"),  Output("results-visual", "style"), #Output("stim-type-name", "style"),
     [
         Input('add-stim-type','n_clicks'),
         Input('preset-experiment-choice','value'),
@@ -228,7 +228,7 @@ def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, ma
     elif (inputId == "input-alerts"):
         openAlert = isOpen
 
-    return rows, openAlert, maxStimuliReached, duplicateStimulus #, style
+    return rows, openAlert, maxStimuliReached, duplicateStimulus, {"display": "none"} #, style
 
 def getStimulusTypesPreset(presetType):
     """ Helper function to load Stimulus Types for preset trials. """
@@ -265,7 +265,7 @@ def deleteStimulus(previous, current, vos):
         raise PreventUpdate 
     else:
         removedStim = [row["stimName"] for row in previous if row not in current]
-        
+
         i=0
         while (i < len(vos)):
             if(vos[i]['stimulus']==removedStim[0]):
