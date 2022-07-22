@@ -265,12 +265,13 @@ def deleteStimulus(previous, current, vos):
         raise PreventUpdate 
     else:
         removedStim = [row["stimName"] for row in previous if row not in current]
+        
         i=0
         while (i < len(vos)):
-            if(vos[i]['name']==removedStim[0]):
+            if(vos[i]['stimulus']==removedStim[0]):
                 vos.pop(i)
-                break
-            i+=1
+            else:
+                i+=1
         return vos
 
 @app.callback(
