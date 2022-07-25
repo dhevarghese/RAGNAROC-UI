@@ -335,7 +335,7 @@ def rewriteModal():
             dbc.ModalBody(
                 className="sl-modal-body",
                 children=[
-                    html.P("This experiment name already exists in our records, in your name. Would you like to rewrite the setup?"),
+                    html.P("This experiment name already exists in our records, in your name. Would you like to overwrite the setup?"),
                     html.Div(
                         [
                             dbc.Button(
