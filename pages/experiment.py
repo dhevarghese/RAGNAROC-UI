@@ -80,7 +80,7 @@ def banner(app):
                     placeholder='ms',
                     type='number',
                     value='',
-                    style= {"width":"30%",}
+                    style= {"width":"30%", "text-align": "center"}
                 ),
             ],
             style={
