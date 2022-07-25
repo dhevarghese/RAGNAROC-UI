@@ -1,4 +1,4 @@
-Steps to generate the Cython file (for any updates to the RAGNAROC model):
+# Steps to generate the Cython file (for any updates to the RAGNAROC model):
 
 - Make required changes to the .pyx file
 - In the docker command line, run the following commands after navigating to this folder
