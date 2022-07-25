@@ -1,5 +1,8 @@
 # Steps to generate the cython file
 
+Cython is used to achieve a performance gain over Python. The compiler generates very efficient code from Cython. On a Windows system, running `setup.py` generates a dll file optimized for Windows. Our AWS Elastic Beanstalk server uses a Linux environment, which requires a `.so` file. Therefore, in order to generate it, we must follow these steps.
+
+- Install Docker on your device
 - Make required changes to the .pyx file
 - In the command line, run the following commands after navigating to this folder
     - `docker build -t <name> .`
@@ -9,4 +12,4 @@
 - Extract ragnaroc.so file present in the tar folder.
 - Replace the newly generated `.so` file for the existing one, and you've successfully updated the model. Congratulations! :tada:
 
-We have to follow these steps for making any updates to the RAGNAROC model because cython generates a dll file on a windows machine, whereas linux systems (such as the AWS-EB server) requires a `.so` file.
+
