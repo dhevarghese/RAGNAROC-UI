@@ -72,11 +72,11 @@ def render_content(tab):
     """ Update style depending on selected tab."""
     styleDisplay = {
         "display": "block",
-        "marginTop": "6rem",
+        "marginTop": "2.5rem",
     }
     styleHide = {
         "display": "none",
-        "marginTop": "6rem",
+        "marginTop": "2.5rem",
     }
     if tab == 'stim-form':
         return styleDisplay, styleHide
@@ -279,14 +279,27 @@ def deleteStimulus(previous, current, vos):
     [
         Input('preset-experiment-choice','value'),
     ],
+    prevent_initial_call=True,
 )
 def setPresetRuntime(preset):
     """ All preset trials run for 600 ms. """
-    if (preset!=""):
-        time = 0
-        if(preset):
-            time=600
-        return time
+    if (preset and preset!=""):
+        return 600
+    else:
+        raise PreventUpdate 
+
+@app.callback(
+    Output('canvas-size','value'),
+    Output('mask-size','value'),
+    [
+        Input('preset-experiment-choice','value'),
+    ],
+    prevent_initial_call=True,
+)
+def setPresetSimulationParameters(preset):
+    """ All preset trials have a canvas size of 27x27 and mask of 3x3 """
+    if (preset and preset!=""):
+        return 27,3
     else:
         raise PreventUpdate 
 
@@ -324,11 +337,14 @@ def updateStimulusTypeDropdown(rows):
         State("original-store", "data"),
         State("exp-creator-name", "value"),	
         State("save-alert", "is_open"),
+        State('canvas-size','value'),
+        State('mask-size','value'),
+
     ],
     prevent_initial_call=True,
     # memoize=True #Commenting as memoizing causes errors when cron job executes.
 )
-def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos, runtime, expName, isOpen, data, ogData, creator, openSavedAlert):
+def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos, runtime, expName, isOpen, data, ogData, creator, openSavedAlert, canvas, mask):
     """ This callback performs input validation and calls the ragnaroc model. This is the core of the system. 
         
         Input: Stimulus Types, Visual Objects, runtime, name, run alert, data stores (sim & original), creator name, save alert.
@@ -365,6 +381,18 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
         elif(runtime == "" or runtime == None or int(runtime) < 1):
             # Set runtime Alert
             return ogData, data, True, "Please set an appropriate runtime for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+        
+        elif(canvas == "" or canvas == None or int(canvas) < 1 or int(canvas) > 40):
+            # Set canvas Alert
+            return ogData, data, True, "Please set an appropriate canvas size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+
+        elif(mask == "" or mask == None or int(mask) < 1 or int(mask) > 40):
+            # Set mask Alert
+            return ogData, data, True, "Please set an appropriate mask size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+
+        if(mask > canvas):
+            # Set mask and canvas size Alert
+            return ogData, data, True, "Mask cannot be larger than the canvas!", None, {"display": "none"}, openSavedAlert, openRewrite
 
         #Validated. 
 
@@ -376,7 +404,7 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
             data = {}
             ogData = {}
 
-            ogData["EV"], ogData["LV"], ogData["IG"], ogData["AM"], ogData["II"], ogData["N2pc"], ogData["stimMap"]  = ragnaroc.runTrial(vos, sts, steps, videoinput)
+            ogData["EV"], ogData["LV"], ogData["IG"], ogData["AM"], ogData["II"], ogData["N2pc"], ogData["stimMap"]  = ragnaroc.runTrial(vos, sts, steps, videoinput, xDim=canvas, yDim=canvas, NNMask=mask)
 
             #Normalize the data to the uint8 range (0-255)
             # EE = 30, EI = -10
@@ -421,10 +449,11 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
     [
         State("sim-store", "data"),
         State('surface-viz','figure'), 
+        State('canvas-size','value'),
     ],
     prevent_initial_call=True,
 )
-def loadingGraph(stim, map, store, surfaceFig):
+def loadingGraph(stim, map, store, surfaceFig, canvas):
     """ This callback sets up the data required for the surface plots. 
         
         Input: Stimulus drop down value, map drop down value, simulated store, surface figure
@@ -457,7 +486,7 @@ def loadingGraph(stim, map, store, surfaceFig):
         if(map == "AM" or map == "IG"):
             fig = {
                 'data': [go.Surface(z=store[map][currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
-                'layout': getSurfaceGraphLayout(currTimePos, store["runtime"]),
+                'layout': getSurfaceGraphLayout(currTimePos, store["runtime"], canvas),
                 'frames': [
                     go.Frame(
                         data=[go.Surface(z=store[map][k,:,:], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
@@ -467,7 +496,7 @@ def loadingGraph(stim, map, store, surfaceFig):
         else:
             fig = {
                 'data': [go.Surface(z=store[map][store["stimMap"][stim],currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
-                'layout': getSurfaceGraphLayout(currTimePos, store["runtime"]),
+                'layout': getSurfaceGraphLayout(currTimePos, store["runtime"], canvas),
                 'frames': [
                     go.Frame(
                         data=[go.Surface(z=store[map][store["stimMap"][stim], k,:,:], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
@@ -484,7 +513,7 @@ def loadingGraph(stim, map, store, surfaceFig):
     # print("Figure payload: {} Bytes".format(sys.getsizeof(fig)))
     return fig
 
-def getSurfaceGraphLayout(currSliderVal=200, runtime=0):
+def getSurfaceGraphLayout(currSliderVal=200, runtime=0, canvasSize=30):
     """ Function to set the layout of the surface plots. """
     return go.Layout(
         template= "plotly_dark",
@@ -492,8 +521,8 @@ def getSurfaceGraphLayout(currSliderVal=200, runtime=0):
         scene = dict
         (
             aspectratio=dict(x=1,y=1,z=1),
-            xaxis = dict(title= dict(text = 'x', font = {"size" : 16}), range = [0,30], tickfont = dict(size=14),), #Modify the axes
-            yaxis = dict(title= dict(text = 'y', font = {"size" : 16}), range = [0,30], tickfont = dict(size=14)),
+            xaxis = dict(title= dict(text = 'x', font = {"size" : 16}), range = [0,canvasSize+3], tickfont = dict(size=14),), #Modify the axes
+            yaxis = dict(title= dict(text = 'y', font = {"size" : 16}), range = [0,canvasSize+3], tickfont = dict(size=14)),
             zaxis = dict(title= dict(text = 'z', font = {"size" : 16}), showticklabels=False, showgrid=False, zeroline=False, range = [0,256],),
             camera = dict(
                 eye=dict(x=1.31, y=1.31, z=1.31)
