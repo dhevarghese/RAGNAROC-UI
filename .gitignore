@@ -1,5 +1,5 @@
 *.ipynb_notebooks
-*.ipynb
+# *.ipynb
 
 # Dash-extensions generated folder
 file_system_store/
@@ -26,7 +26,8 @@ vv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 pages/__pycache__/
-*.py[cod]
+# *.py[cod]
+*.py[co]
 *$py.class
 .mypy_cache/
 
