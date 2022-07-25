@@ -1,10 +1,12 @@
 from dash import dcc, html, dash_table
+import dash_bootstrap_components as dbc
 
 def sideBar():
     return html.Div(
         id="sidebar",
         children=[
             getPresetsDiv(),
+            getSimulationParameters(),
             getStimulusTable(),
             getVisualObjectsTable(),
         ]
@@ -23,6 +25,56 @@ def getPresetsDiv():
 
         ],
         style={ "display":"flex", },
+    )               
+
+def getSimulationParameters():
+    return html.Div(
+        children=[
+            html.P("Canvas",
+                style={ "paddingTop":"0.2rem", }
+            ),
+            html.Div(
+                children = [
+                    dcc.Input(
+                        id="canvas-size",
+                        className="form-name-input hideNumScroll",
+                        placeholder='N',
+                        type='number', min=1, max=40,
+                        value='',
+                        style= {"width":"40%", "text-align": "center"}
+                    ),
+                    dbc.Tooltip(
+                        "NxN matrix range: (1,40) ",
+                        target="canvas-size",
+                        placement="top",
+                    ),
+                ],
+
+            ),
+            html.P("Mask",
+                style={"paddingTop":"0.2rem", }
+            ),
+            html.Div(
+                children = [
+                    dcc.Input(
+                        id="mask-size",
+                        className="form-name-input hideNumScroll",
+                        placeholder='N',
+                        type='number', min=1, max=40,
+                        value='',
+                        style= {"width":"40%", "text-align": "center"}
+                    ),
+                    dbc.Tooltip(
+                        "NxN matrix range: (1,40) ",
+                        target="mask-size",
+                        placement="top",
+                    ),
+                ],
+
+            ),
+
+        ],
+        style={ "display":"flex", "justify-content": "space-around", "margin-top":"2.5rem"},
     )
 
 def getStimulusTable():
@@ -80,7 +132,7 @@ def getStimulusTable():
             ),
         ],
         style={
-            "marginTop": "6rem",
+            "marginTop": "2.5rem",
             "display":"block",
         },
     )
@@ -152,7 +204,7 @@ def getVisualObjectsTable():
             ),
         ],
         style={
-            "marginTop": "6rem",
+            "marginTop": "2.5rem",
             "display":"none",
         },
     )
