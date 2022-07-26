@@ -253,26 +253,43 @@ def getStimulusTypesPreset(presetType):
         preset.append({'stimName': "2", 'td': 0.7, 'bu': 0.6})
     return preset
 
-@app.callback(Output('vis-objs-table','data'),
-    [Input('stim-types-table', 'data_previous')],
-    [
-        State('stim-types-table', 'data'),
-        State('vis-objs-table','data')
-    ]
-)
-def deleteStimulus(previous, current, vos):
-    if previous is None:
-        raise PreventUpdate 
-    else:
-        removedStim = [row["stimName"] for row in previous if row not in current]
+# @app.callback(Output('vis-objs-table','data'),
+#     [Input('stim-types-table', 'data_previous')],
+#     [
+#         State('stim-types-table', 'data'),
+#         State('vis-objs-table','data')
+#     ]
+# )
+# def deleteStimulus(previous, current, vos):
+#     if previous is None:
+#         raise PreventUpdate 
+#     else:
+#         prevKeys = {row["stimName"] for row in previous} 
+#         currKeys = {row["stimName"] for row in current} 
+#         removedStim = prevKeys - currKeys
 
-        i=0
-        while (i < len(vos)):
-            if(vos[i]['stimulus']==removedStim[0]):
-                vos.pop(i)
-            else:
-                i+=1
-        return vos
+#         if(removedStim):
+#             stim = removedStim.pop()
+#             i=0
+#             while (i < len(vos)):
+#                 if(vos[i]['stimulus']==stim):
+#                     vos.pop(i)
+#                 else:
+#                     i+=1
+#             return vos
+#         else:
+#             raise PreventUpdate 
+
+@app.callback(Output('vis-obj-x-tooltip','children'), Output('vis-obj-y-tooltip','children'),
+    [Input('canvas-size','value')],
+)
+def updateTooltip(canvas):
+    if not canvas or canvas < 1 or canvas > 40:
+        return "Range: (1,27) ", "Range: (1,27) " 
+    else:
+        hint = "Range: (1,{}) ".format(canvas)
+        return hint, hint
+
 
 @app.callback(
     Output('exp-total-time','value'),
@@ -382,11 +399,11 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
             # Set runtime Alert
             return ogData, data, True, "Please set an appropriate runtime for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
         
-        elif(canvas == "" or canvas == None or int(canvas) < 1 or int(canvas) > 40):
+        elif(canvas == "" or canvas == None or int(canvas) < 1 or int(canvas) > 50):
             # Set canvas Alert
             return ogData, data, True, "Please set an appropriate canvas size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
-        elif(mask == "" or mask == None or int(mask) < 1 or int(mask) > 40):
+        elif(mask == "" or mask == None or int(mask) < 1 or int(mask) > 10):
             # Set mask Alert
             return ogData, data, True, "Please set an appropriate mask size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
@@ -394,7 +411,42 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
             # Set mask and canvas size Alert
             return ogData, data, True, "Mask cannot be larger than the canvas!", None, {"display": "none"}, openSavedAlert, openRewrite
 
-        #Validated. 
+        # Check if all vos and sts are within range
+        try:
+            stims = set()
+            for item in sts:
+                stims.add(item["stimName"])
+                name,td,bu = item["stimName"], float(item["td"]), float(item["bu"])
+                if(td > 1 or td < 0):
+                    return ogData, data, True, "Please set an appropriate top-down value for stimulus {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                elif(bu>1 or bu<0):
+                    return ogData, data, True, "Please set an appropriate bottom-up value for stimulus {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                # item["td"], item["bu"] = td, bu
+
+            for item in vos:
+                #name, x,y,duration,latency,stim = item["name"], int(item["X"]), int(item["Y"]), int(item["duration"]), int(item["latency"]), item["stimulus"]
+                name, x,y,duration,latency,stim = item["name"], float(item["X"]), float(item["Y"]), float(item["duration"]), float(item["latency"]), item["stimulus"]
+                if(stim not in stims):
+                    # Invalid stimuli
+                    return ogData, data, True, "Please ensure that all visual objects have an appropriate stimulus type", None, {"display": "none"}, openSavedAlert, openRewrite
+                if(x>canvas or x<1):
+                    return ogData, data, True, "Please set an appropriate x value for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                elif(y>canvas or y<1):
+                    return ogData, data, True, "Please set an appropriate y value for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                elif(duration>1000 or duration< 0):
+                    return ogData, data, True, "Please set an appropriate duration for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                elif(latency>1000 or latency<0):
+                    return ogData, data, True, "Please set an appropriate latency for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                item["X"], item["Y"], item["duration"], item["latency"] = x, y, duration, latency
+
+        
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print(message)
+            return ogData, data, True, "An error occured...", None, {"display": "none"}, openSavedAlert, openRewrite
+
+        # Validated. 
 
         if(inputId == "run-sim"):
             steps = int(runtime)

@@ -39,12 +39,12 @@ def getSimulationParameters():
                         id="canvas-size",
                         className="form-name-input hideNumScroll",
                         placeholder='N',
-                        type='number', min=1, max=40,
+                        type='number', min=1, max=50,
                         value='',
                         style= {"width":"40%", "text-align": "center"}
                     ),
                     dbc.Tooltip(
-                        "NxN matrix range: (1,40) ",
+                        "NxN matrix range: (1,50) ",
                         target="canvas-size",
                         placement="top",
                     ),
@@ -60,12 +60,12 @@ def getSimulationParameters():
                         id="mask-size",
                         className="form-name-input hideNumScroll",
                         placeholder='N',
-                        type='number', min=1, max=40,
+                        type='number', min=1, max=10,
                         value='',
                         style= {"width":"40%", "text-align": "center"}
                     ),
                     dbc.Tooltip(
-                        "NxN matrix range: (1,40) ",
+                        "NxN matrix range: (1,10) ",
                         target="mask-size",
                         placement="top",
                     ),
@@ -92,16 +92,18 @@ def getStimulusTable():
                     {
                         'name': 'Top Down',
                         'id': 'td',
+                        'type': 'numeric',
                     },
                     {
                         'name': 'Bottom Up',
                         'id': 'bu',
+                        'type': 'numeric',
                     }
                 ],
                 data=[],
                 row_deletable=True,
                 style_as_list_view=True,
-                #editable=True,
+                editable=True,
                 style_cell={
                     'padding': '5px',
                 },
@@ -173,7 +175,7 @@ def getVisualObjectsTable():
                 data=[],
                 row_deletable=True,
                 style_as_list_view=True,
-                #editable=True,
+                editable=True,
                 style_cell={
                     'padding': '5px',
                 },
