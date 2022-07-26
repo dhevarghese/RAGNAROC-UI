@@ -221,6 +221,7 @@ def visual_objects_form():
                     dbc.Tooltip(
                         "Range: (1,27) ",
                         target="vis-obj-x",
+                        id="vis-obj-x-tooltip",
                         placement="top",
                     ),
 
@@ -234,6 +235,7 @@ def visual_objects_form():
                     dbc.Tooltip(
                         "Range: (1,27) ",
                         target="vis-obj-y",
+                        id="vis-obj-y-tooltip",
                         placement="top",
                     ),
                 ], style={"display":"flex", "marginBottom":"2rem", "marginTop":"2rem", "justifyContent":"space-around"}),
