@@ -253,33 +253,6 @@ def getStimulusTypesPreset(presetType):
         preset.append({'stimName': "2", 'td': 0.7, 'bu': 0.6})
     return preset
 
-# @app.callback(Output('vis-objs-table','data'),
-#     [Input('stim-types-table', 'data_previous')],
-#     [
-#         State('stim-types-table', 'data'),
-#         State('vis-objs-table','data')
-#     ]
-# )
-# def deleteStimulus(previous, current, vos):
-#     if previous is None:
-#         raise PreventUpdate 
-#     else:
-#         prevKeys = {row["stimName"] for row in previous} 
-#         currKeys = {row["stimName"] for row in current} 
-#         removedStim = prevKeys - currKeys
-
-#         if(removedStim):
-#             stim = removedStim.pop()
-#             i=0
-#             while (i < len(vos)):
-#                 if(vos[i]['stimulus']==stim):
-#                     vos.pop(i)
-#                 else:
-#                     i+=1
-#             return vos
-#         else:
-#             raise PreventUpdate 
-
 @app.callback(Output('vis-obj-x-tooltip','children'), Output('vis-obj-y-tooltip','children'),
     [Input('canvas-size','value')],
 )
