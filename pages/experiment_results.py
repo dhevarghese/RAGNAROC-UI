@@ -39,7 +39,8 @@ def resultsHelpModal():
                 children=[
                     html.P("The AM and IG Maps are independent of stimulus"),
                     html.P("Clicking on the 3D surface plots update the line plots"),
-                    html.P("The line plots display activations of the chosen map, at the clicked point"),
+                    html.P("The surface plot display activations of the chosen map, across time. The values of the surface plot are normalized (0,256)."),
+                    html.P("The line plot display activations of the chosen map, at the clicked point on the surface plot"),
                 ],   
                 style={
                     "color":"white",
