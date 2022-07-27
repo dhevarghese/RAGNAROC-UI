@@ -17,10 +17,10 @@ import ragnaroc
 from pages import experiment, index
 
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
-import uuid
+from boto3.dynamodb.conditions import Key
 import json
 from decimal import Decimal
+from datetime import datetime
 
 external_stylesheets = [dbc.themes.BOOTSTRAP,
                         'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css'
@@ -446,6 +446,18 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
             data["runtime"] = steps
             data['stimMap'] = ogData['stimMap']
 
+            # Log run to database
+            try:
+                dynamodb.Table('ragnaroc-runs').put_item(Item={		
+                    "creator" : str(creator) if creator else "guest",	
+                    "exp-name": str(expName),	
+                    "date" : str(datetime.now())
+                })	
+            except Exception as ex:
+                template = "An exception of type {0} occurred while logging run to database. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print(message)
+
             return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert, openRewrite
         
         elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
@@ -530,7 +542,7 @@ def loadingGraph(stim, map, store, surfaceFig, canvas):
             }
         
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        template = "An exception of type {0} occurred while loading surface plots. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
         raise PreventUpdate 
@@ -703,7 +715,7 @@ def updateLineGraphs(clickData, stim, timePoint, store):
             
         
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        template = "An exception of type {0} occurred while loading line graphs. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
         raise PreventUpdate 
@@ -790,7 +802,7 @@ def load_trials(n1, name, creator):
             return [], [], None, None, False, True, None, None, {"display": "none"}
 
     except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        template = "An exception of type {0} occurred while loading experiment from database. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         print(message)
         return [], [], None, None, False, True, None, None, {"display": "none"}
@@ -838,7 +850,7 @@ def saveExp(creator, expName, runtime, stimTypes, visObjs, rewrite):
         return True	
         	
     except Exception as ex:	
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"	
+        template = "An exception of type {0} occurred while saving experiment. Arguments:\n{1!r}"	
         message = template.format(type(ex).__name__, ex.args)	
         print(message)	
         return False
