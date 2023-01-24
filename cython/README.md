@@ -11,7 +11,6 @@ Cython is used to achieve a performance gain over Python. The compiler generates
 - In Docker desktop, find the container that was just created, and copy the container ID, which is a list of random letters and numbers
 - Then run the following command
     - `docker cp <containerID>:/ragnaroc.cpython-38-x86_64-linux-gnu.so .`
-- 
 - Replace the newly generated `.so` file for the existing one in the zip file that you have from Elastic Beanstalk and re-upload it, and you've successfully updated the model. Congratulations! :tada:
 
 
