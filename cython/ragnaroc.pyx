@@ -266,4 +266,13 @@ def runTrial(list visualObjects, list stimulusTypes, int steps, np.ndarray[doubl
         N2pc[step] = np.sum(TrimmedAM[0:int(math.ceil(xDim/2.)),:])
         N2pc[step] = N2pc[step] -np.sum(TrimmedAM[int(math.ceil(xDim/2.))+1:,:])
 
-    return EV, LV, IG, AM, II, N2pc, stimulusMap
+
+    ## Transposing axes for EV, AM, LV, IG, and II
+    EVTransposed = np.transpose(EV, axes=(0, 1, 3, 2))
+    AMTransposed = np.transpose(AM, axes=(0, 2, 1))
+    LVTransposed = np.transpose(LV, axes=(0, 1, 3, 2))
+    IGTransposed = np.transpose(IG, axes=(0, 2, 1))
+    IITransposed = np.transpose(II, axes=(0, 1, 3, 2))
+
+    
+    return EVTransposed, LVTransposed, IGTransposed, AMTransposed, IITransposed, N2pc, stimulusMap
