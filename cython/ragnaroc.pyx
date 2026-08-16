@@ -15,8 +15,8 @@ def RFfunction(xgrid, ygrid, scale):
     t   = (xgrid**2 + ygrid**2) 
     return np.exp(-0.5 * t *scale)
 
-DTYPE = np.int
-ctypedef np.int_t DTYPE_t
+DTYPE = np.int64
+ctypedef np.int64_t DTYPE_t
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False)  # turn off negative index wrapping for entire function
@@ -63,9 +63,9 @@ def runTrial(list visualObjects, list stimulusTypes, int steps, np.ndarray[doubl
     cdef int exciteEEG = 3
     cdef int excite_AM = 3
 
-    cdef np.ndarray[np.int_t, ndim=1] xx = np.arange(-xDim, xDim+1,1)
-    cdef np.ndarray[np.int_t, ndim=1] yy = np.arange(-yDim, yDim+1,1)
-    cdef np.ndarray[np.int_t, ndim=2] xgrid, ygrid
+    cdef np.ndarray[np.int64_t, ndim=1] xx = np.arange(-xDim, xDim+1,1)
+    cdef np.ndarray[np.int64_t, ndim=1] yy = np.arange(-yDim, yDim+1,1)
+    cdef np.ndarray[np.int64_t, ndim=2] xgrid, ygrid
     xgrid, ygrid = np.meshgrid(xx, yy)
     cdef np.ndarray[np.double_t, ndim=2] sombrero
     sombrero = Attnfunction(xgrid, ygrid, .07, individuation)
@@ -82,11 +82,11 @@ def runTrial(list visualObjects, list stimulusTypes, int steps, np.ndarray[doubl
     cdef np.ndarray[DTYPE_t, ndim=1] x = np.zeros(visObjsCount).astype(int)
     cdef np.ndarray[DTYPE_t, ndim=1] y = np.zeros(visObjsCount).astype(int)
     cdef np.ndarray[DTYPE_t, ndim=1] Stype = np.zeros(visObjsCount).astype(int)
-    cdef np.ndarray[np.float_t, ndim=1] onset = np.zeros(visObjsCount).astype(float) # Change to double
-    cdef np.ndarray[np.float_t, ndim=1] period = np.zeros(visObjsCount).astype(float) # Change to double
+    cdef np.ndarray[np.float64_t, ndim=1] onset = np.zeros(visObjsCount).astype(float) # Change to double
+    cdef np.ndarray[np.float64_t, ndim=1] period = np.zeros(visObjsCount).astype(float) # Change to double
 
-    cdef np.ndarray[np.float_t, ndim=1] bu = np.zeros(len(stimulusTypes)).astype(float)
-    cdef np.ndarray[np.float_t, ndim=1] td = np.zeros(len(stimulusTypes)).astype(float)
+    cdef np.ndarray[np.float64_t, ndim=1] bu = np.zeros(len(stimulusTypes)).astype(float)
+    cdef np.ndarray[np.float64_t, ndim=1] td = np.zeros(len(stimulusTypes)).astype(float)
 
     cdef int stimuliCount = 0
     stimulusMap = {}
