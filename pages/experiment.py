@@ -102,8 +102,7 @@ def experimentForms():
                         className="bottom-white-outline-input",
                         placeholder='Name',
                         type='text',
-                    ),                                             
-                    dbc.Badge(" ! ", color="danger", className="me-1"), #display on error
+                    ),
                 ],
                 className="exp-header",
             ),
@@ -481,15 +480,6 @@ def alerts():
         dbc.Alert(
             "Please enter valid inputs for stimulus type",
             id="stim-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="danger",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "Maximum stimuli count reached",
-            id="stim-count-alert",
             is_open=False,
             fade=True,
             duration=4000,

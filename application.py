@@ -2,25 +2,33 @@
     AUTHOR: DHEERAJ V
 """
 
+import logging
+import os
 import sys
 import numpy as np
 
-from dash import dcc, html, dash_table, callback_context
+from dash import dcc, html, callback_context, no_update
 from plotly.subplots import make_subplots
-from dash_extensions.enrich import Dash, Output, Input, State, ServersideOutput, Trigger, EnrichedOutput
+from dash_extensions.enrich import Dash, Output, Input, State, Serverside, Trigger
 
 import plotly.graph_objects as go
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
 import ragnaroc
+import storage
 from pages import experiment, index
 
-import boto3
-from boto3.dynamodb.conditions import Key
-import json
-from decimal import Decimal
-from datetime import datetime
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("ragnaroc")
+
+
+def log_exc(context, ex):
+    """Log a swallowed exception with enough detail to diagnose it."""
+    logger.error(
+        "An exception of type %s occurred while %s. Arguments: %r",
+        type(ex).__name__, context, ex.args,
+    )
 
 external_stylesheets = [dbc.themes.BOOTSTRAP,
                         'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css'
@@ -32,21 +40,6 @@ application = app.server
 
 # Ideally, all callbacks should be in a separate file or in a file with the appropriate element. But, as we require the app variable (Due to the use of Dash-extensions, to 
 # save variables), I've defined all over here.
-
-client = boto3.client(
-    'dynamodb',
-    aws_access_key_id='REMOVED-AWS-ACCESS-KEY-ID',
-    aws_secret_access_key='REMOVED-AWS-SECRET-KEY',
-    region_name="us-east-1",
-    )
-dynamodb = boto3.resource(
-    'dynamodb',
-    aws_access_key_id='REMOVED-AWS-ACCESS-KEY-ID',
-    aws_secret_access_key='REMOVED-AWS-SECRET-KEY',
-    region_name="us-east-1",
-    )
-ddb_exceptions = client.exceptions
-
 
 ## Workaround for multi-page Dash app 
 app.layout = html.Div([
@@ -84,23 +77,22 @@ def render_content(tab):
         return styleHide, styleDisplay
 
 @app.callback(
-    EnrichedOutput('vis-objs-table','data'), EnrichedOutput("vo-alert", "is_open"), EnrichedOutput("vo-dup-alert", "is_open"), EnrichedOutput("results-visual", "style"), 
+    Output('vis-objs-table','data'), Output("vo-alert", "is_open"), Output("vo-dup-alert", "is_open"), Output("results-visual", "style"),
     [
-        Input('vis-obj-add','n_clicks'), 
+        Input('vis-obj-add','n_clicks'),
         Input('preset-experiment-choice','value'),
     ],
     [
         State('vis-objs-table','data'),
         State('vis-obj-name','value'),
-        State('vis-obj-x','value'), 
+        State('vis-obj-x','value'),
         State('vis-obj-y','value'),
         State('vis-obj-duration','value'),
         State('vis-obj-latency','value'),
         State('vis-obj-stim-type','value'),
-        State("vo-alert", "is_open"),
     ],
 )
-def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimType, isOpen):
+def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimType):
     """ Add visual object details to the data table. The details are added by provided input or preset. If invalid data is provided, the user is alerted"""
     ctx = callback_context
     openAlert = False
@@ -132,9 +124,6 @@ def addVisualObject(n_clicks, preset, rows, name, x, y, duration, latency, stimT
         presetType = ctx.triggered[0]['value'].split('.')[0]
         rows = getVisualObjectPreset(presetType)
 
-    elif (inputId == "input-alerts"):
-        openAlert = isOpen
-    
     return rows, openAlert, duplicateObj, {"display": "none"}
 
 def getVisualObjectPreset(presetType):
@@ -187,20 +176,19 @@ def buUpdate(input_value, slider_value):
     return value, value
 
 @app.callback(
-    Output('stim-types-table','data'), Output("stim-alert", "is_open"), Output("stim-count-alert","is_open"), Output("stim-dup-alert","is_open"),  Output("results-visual", "style"), #Output("stim-type-name", "style"),
+    Output('stim-types-table','data'), Output("stim-alert", "is_open"), Output("stim-dup-alert","is_open"),  Output("results-visual", "style"),
     [
         Input('add-stim-type','n_clicks'),
         Input('preset-experiment-choice','value'),
     ],
-    [State('stim-types-table','data'), State('stim-type-name','value'), State('top-down','value'), State('bottom-up','value'), State("stim-alert", "is_open"), State("stim-count-alert","is_open")],
+    [State('stim-types-table','data'), State('stim-type-name','value'), State('top-down','value'), State('bottom-up','value')],
     prevent_initial_call=True,
 )
-def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, maxStimuliReached):
+def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight):
     """ Add Stimulus Type details to the data table. The details are added by provided input or preset. If invalid data is provided, the user is alerted"""
 
     ctx = callback_context
     openAlert = False
-    maxStimuliReached = False
     duplicateStimulus = False
 
     inputId = ""
@@ -225,10 +213,7 @@ def addStimulusType(n_clicks, preset, rows, name, tdWeight, buWeight, isOpen, ma
         presetType = ctx.triggered[0]['value'].split('.')[0]
         rows = getStimulusTypesPreset(presetType)
 
-    elif (inputId == "input-alerts"):
-        openAlert = isOpen
-
-    return rows, openAlert, maxStimuliReached, duplicateStimulus, {"display": "none"} #, style
+    return rows, openAlert, duplicateStimulus, {"display": "none"}
 
 def getStimulusTypesPreset(presetType):
     """ Helper function to load Stimulus Types for preset trials. """
@@ -254,14 +239,15 @@ def getStimulusTypesPreset(presetType):
     return preset
 
 @app.callback(Output('vis-obj-x-tooltip','children'), Output('vis-obj-y-tooltip','children'),
+    Output('vis-obj-x','max'), Output('vis-obj-y','max'),
     [Input('canvas-size','value')],
 )
 def updateTooltip(canvas):
-    if not canvas or canvas < 1 or canvas > 40:
-        return "Range: (1,27) ", "Range: (1,27) " 
-    else:
-        hint = "Range: (1,{}) ".format(canvas)
-        return hint, hint
+    """ Keep the X/Y input bounds and their tooltips in sync with the canvas size. """
+    if not canvas or canvas < 1 or canvas > 50:
+        return "Range: (1,27) ", "Range: (1,27) ", 27, 27
+    hint = "Range: (1,{}) ".format(canvas)
+    return hint, hint, canvas, canvas
 
 
 @app.callback(
@@ -306,14 +292,14 @@ def updateStimulusTypeDropdown(rows):
     return opts, opts
 
 @app.callback(
-    ServersideOutput("original-store", "data"), 
-    ServersideOutput("sim-store", "data"), 
-    EnrichedOutput("run-sim-alert", "is_open"), 
-    EnrichedOutput("run-sim-alert", "children"), 
-    EnrichedOutput('stim-type-dropdown','value'), 
-    EnrichedOutput("results-visual", "style"), 
-    EnrichedOutput("save-alert", "is_open"),
-    EnrichedOutput("rewrite-modal", "is_open"),	
+    Output("original-store", "data"),
+    Output("sim-store", "data"),
+    Output("run-sim-alert", "is_open"),
+    Output("run-sim-alert", "children"),
+    Output('stim-type-dropdown','value'),
+    Output("results-visual", "style"),
+    Output("save-alert", "is_open"),
+    Output("rewrite-modal", "is_open"),
     [
         Input('run-sim','n_clicks'),  Input("save-creator-exp","n_clicks"), Input("rewrite-accept","n_clicks"), Input("rewrite-deny", "n_clicks"),
     ],
@@ -352,37 +338,37 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
     openRewrite = False
 
     if(clicks == None and saveClick == None and rewriteClick == None and rewriteDeny == None):
-        return ogData, data, False, "", None, {"display": "none"}, openSavedAlert, openRewrite
+        return no_update, no_update, False, "", None, {"display": "none"}, openSavedAlert, openRewrite
 
     if ctx.triggered:
         inputId = ctx.triggered[0]['prop_id'].split('.')[0]
         if(expName == "" or expName == None):
             # Experiment name Alert
-            return ogData, data, True, "Please set experiment name", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True, "Please set experiment name", None, {"display": "none"}, openSavedAlert, openRewrite
 
         elif(len(sts) == 0):
             # Stimulus types alert
-            return ogData, data, True,"Please add stimulus types to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True,"Please add stimulus types to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
         
         elif(len(vos) == 0):
             # Visual Objects Alert
-            return ogData, data, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True,"Please add visual objects to the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
         elif(runtime == "" or runtime == None or int(runtime) < 1):
             # Set runtime Alert
-            return ogData, data, True, "Please set an appropriate runtime for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True, "Please set an appropriate runtime for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
         
         elif(canvas == "" or canvas == None or int(canvas) < 1 or int(canvas) > 50):
             # Set canvas Alert
-            return ogData, data, True, "Please set an appropriate canvas size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True, "Please set an appropriate canvas size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
         elif(mask == "" or mask == None or int(mask) < 1 or int(mask) > 10):
             # Set mask Alert
-            return ogData, data, True, "Please set an appropriate mask size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True, "Please set an appropriate mask size for the experiment", None, {"display": "none"}, openSavedAlert, openRewrite
 
         if(mask > canvas):
             # Set mask and canvas size Alert
-            return ogData, data, True, "Mask cannot be larger than the canvas!", None, {"display": "none"}, openSavedAlert, openRewrite
+            return no_update, no_update, True, "Mask cannot be larger than the canvas!", None, {"display": "none"}, openSavedAlert, openRewrite
 
         # Check if all vos and sts are within range
         try:
@@ -391,9 +377,9 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
                 stims.add(item["stimName"])
                 name,td,bu = item["stimName"], float(item["td"]), float(item["bu"])
                 if(td > 1 or td < 0):
-                    return ogData, data, True, "Please set an appropriate top-down value for stimulus {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please set an appropriate top-down value for stimulus {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
                 elif(bu>1 or bu<0):
-                    return ogData, data, True, "Please set an appropriate bottom-up value for stimulus {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please set an appropriate bottom-up value for stimulus {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
                 # item["td"], item["bu"] = td, bu
 
             for item in vos:
@@ -401,23 +387,21 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
                 name, x,y,duration,latency,stim = item["name"], float(item["X"]), float(item["Y"]), float(item["duration"]), float(item["latency"]), item["stimulus"]
                 if(stim not in stims):
                     # Invalid stimuli
-                    return ogData, data, True, "Please ensure that all visual objects have an appropriate stimulus type", None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please ensure that all visual objects have an appropriate stimulus type", None, {"display": "none"}, openSavedAlert, openRewrite
                 if(x>canvas or x<1):
-                    return ogData, data, True, "Please set an appropriate x value for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please set an appropriate x value for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
                 elif(y>canvas or y<1):
-                    return ogData, data, True, "Please set an appropriate y value for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please set an appropriate y value for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
                 elif(duration>1000 or duration< 0):
-                    return ogData, data, True, "Please set an appropriate duration for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please set an appropriate duration for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
                 elif(latency>1000 or latency<0):
-                    return ogData, data, True, "Please set an appropriate latency for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
+                    return no_update, no_update, True, "Please set an appropriate latency for object {}".format(name), None, {"display": "none"}, openSavedAlert, openRewrite
                 item["X"], item["Y"], item["duration"], item["latency"] = x, y, duration, latency
 
         
         except Exception as ex:
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(ex).__name__, ex.args)
-            print(message)
-            return ogData, data, True, "An error occured...", None, {"display": "none"}, openSavedAlert, openRewrite
+            log_exc("validating the experiment inputs", ex)
+            return no_update, no_update, True, "An error occured...", None, {"display": "none"}, openSavedAlert, openRewrite
 
         # Validated. 
 
@@ -434,47 +418,50 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
             #Normalize the data to the uint8 range (0-255)
             # EE = 30, EI = -10
             payload = 0
-            for map in ogData.keys():
-                if (map != "stimMap"):
-                    data[map] = (ogData[map] + 10) * (255/40)
-                    data[map] = data[map].astype(np.uint8)
-                    payload += sys.getsizeof(data[map])
-            
-            print("Total simulation data: {} Bytes".format(payload))
+            for mapName in ogData.keys():
+                if (mapName != "stimMap"):
+                    data[mapName] = (ogData[mapName] + 10) * (255/40)
+                    data[mapName] = data[mapName].astype(np.uint8)
+                    payload += sys.getsizeof(data[mapName])
+
+            logger.info("Total simulation data: %s Bytes", payload)
 
             ogData["runtime"] = steps
             data["runtime"] = steps
             data['stimMap'] = ogData['stimMap']
 
-            # Log run to database
+            # Log run to storage
             try:
-                dynamodb.Table('ragnaroc-runs').put_item(Item={		
-                    "creator" : str(creator) if creator else "guest",	
-                    "exp-name": str(expName),	
-                    "date" : str(datetime.now())
-                })	
+                storage.log_run(str(creator) if creator else "guest", str(expName))
             except Exception as ex:
-                template = "An exception of type {0} occurred while logging run to database. Arguments:\n{1!r}"
-                message = template.format(type(ex).__name__, ex.args)
-                print(message)
+                log_exc("logging run to storage", ex)
 
-            return ogData, data, False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert, openRewrite
-        
-        elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):	
-            # Open Modal to enter creator name. Once entered, add to Database. 
-            saved = saveExp(creator, expName, runtime, sts, vos, False)  
-            if(saved):
+            return Serverside(ogData), Serverside(data), False, "", sts[0]['stimName'] , {'display':'flex'}, openSavedAlert, openRewrite
+
+        elif (inputId == "save-creator-exp" and creator != "" and (creator is not None)):
+            # Save the experiment; on a name collision ask before overwriting.
+            try:
+                if storage.trial_exists(creator, expName):
+                    openRewrite = True
+                else:
+                    storage.save_trial(creator, expName, int(runtime), int(canvas), int(mask), sts, vos)
+                    openSavedAlert = True
+            except Exception as ex:
+                log_exc("saving experiment", ex)
+                return no_update, no_update, True, "Failed to save the experiment (storage error).", None, no_update, False, False
+
+        elif (inputId == "rewrite-accept"):
+            try:
+                storage.save_trial(creator, expName, int(runtime), int(canvas), int(mask), sts, vos, overwrite=True)
                 openSavedAlert = True
-            else:
-                openRewrite = True
-        
-        elif (inputId == "rewrite-accept"):	 
-            openSavedAlert = saveExp(creator, expName, runtime, sts, vos, True)  	
-        
-        elif (inputId == "rewrite-deny"):	 
-            return ogData, data, False, "", None, {"display": "none"}, openSavedAlert, False
-        	
-    return {}, {}, isOpen, "", None, {"display": "none"}, openSavedAlert, openRewrite
+            except Exception as ex:
+                log_exc("saving experiment", ex)
+                return no_update, no_update, True, "Failed to save the experiment (storage error).", None, no_update, False, False
+
+        elif (inputId == "rewrite-deny"):
+            return no_update, no_update, False, "", None, no_update, openSavedAlert, False
+
+    return no_update, no_update, isOpen, "", None, no_update, openSavedAlert, openRewrite
 
 @app.callback( 
     Output('surface-viz','figure'), 
@@ -490,62 +477,62 @@ def simulationOperations(clicks, saveClick, rewriteClick, rewriteDeny, sts, vos,
     ],
     prevent_initial_call=True,
 )
-def loadingGraph(stim, map, store, surfaceFig, canvas):
-    """ This callback sets up the data required for the surface plots. 
-        
+def loadingGraph(stim, mapName, store, surfaceFig, canvas):
+    """ This callback sets up the data required for the surface plots.
+
         Input: Stimulus drop down value, map drop down value, simulated store, surface figure
         Output: Updated surface figure.
 
         Fig consists of data, layout and frames. The frames are required to animate through the neural activations.
     """
     if store is None or not store :
-        print("Store: {}".format(store))
-        raise PreventUpdate 
-    
-    if map is None or stim is None:
-        raise PreventUpdate 
-    
-    print("Loading Graph with {} map".format(map))
-    
+        logger.info("Store: %s", store)
+        raise PreventUpdate
+
+    if mapName is None or stim is None:
+        raise PreventUpdate
+
+    logger.info("Loading Graph with %s map", mapName)
+
     # Set the time point of the animation
     currTimePos = 0
     if store["runtime"] > 200 :
-        currTimePos = 200 
+        currTimePos = 200
 
     fig={}
 
     try:
         if('sliders' in surfaceFig['layout']):
             currTimePos = surfaceFig['layout']['sliders'][0]['active']
-                
+        # The previous figure's slider may point past the end of a shorter re-run
+        currTimePos = min(currTimePos, store["runtime"] - 1)
+
         stim = str(stim)
         # Stim only applies to EV, LV and II
-        if(map == "AM" or map == "IG"):
+        if(mapName == "AM" or mapName == "IG"):
             fig = {
-                'data': [go.Surface(z=store[map][currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
+                'data': [go.Surface(z=store[mapName][currTimePos, :,:], colorscale="Hot", showscale=False, name=mapName+stim)],
                 'layout': getSurfaceGraphLayout(currTimePos, store["runtime"], canvas),
                 'frames': [
                     go.Frame(
-                        data=[go.Surface(z=store[map][k,:,:], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
+                        data=[go.Surface(z=store[mapName][k,:,:], colorscale="Hot", showscale=False, name=mapName+stim)], name=str(k))
                         for k in range(0,store["runtime"])
                 ],
             }
         else:
             fig = {
-                'data': [go.Surface(z=store[map][store["stimMap"][stim],currTimePos, :,:], colorscale="Hot", showscale=False, name=map+stim)],
+                'data': [go.Surface(z=store[mapName][store["stimMap"][stim],currTimePos, :,:], colorscale="Hot", showscale=False, name=mapName+stim)],
                 'layout': getSurfaceGraphLayout(currTimePos, store["runtime"], canvas),
                 'frames': [
                     go.Frame(
-                        data=[go.Surface(z=store[map][store["stimMap"][stim], k,:,:], colorscale="Hot", showscale=False, name=map+stim)], name=str(k))
+                        data=[go.Surface(z=store[mapName][store["stimMap"][stim], k,:,:], colorscale="Hot", showscale=False, name=mapName+stim)], name=str(k))
                         for k in range(0,store["runtime"])
                 ],
             }
-        
+
     except Exception as ex:
-        template = "An exception of type {0} occurred while loading surface plots. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        print(message)
-        raise PreventUpdate 
+        log_exc("loading surface plots", ex)
+        raise PreventUpdate
 
     # print("Figure payload: {} Bytes".format(sys.getsizeof(fig)))
     return fig
@@ -609,7 +596,7 @@ def getSurfaceGraphLayout(currSliderVal=200, runtime=0, canvasSize=30):
                         "label": str(k),
                         "method": "animate",
                     }
-                    for k in range(0,runtime+1)
+                    for k in range(0,runtime)
                 ],
                 "name" : "res-slider",
                 "active": currSliderVal,
@@ -650,23 +637,26 @@ def updateLineGraphs(clickData, stim, timePoint, store):
     # The line charts are dependant on click and stimulus type
     # Store size is 600* 27 * 27 
     if store is None or not store:
-        print("Original Store: {}".format(store))
-        raise PreventUpdate 
-    
-    if stim is None:
-        raise PreventUpdate 
+        logger.info("Original Store: %s", store)
+        raise PreventUpdate
 
-    print("Loading line graphs")
+    if stim is None:
+        raise PreventUpdate
+
+    logger.info("Loading line graphs")
 
     try:
         runtime = store["runtime"]
-        timeline = np.arange(0, runtime+1, 1)
-        
-        xPos = 13
-        yPos = 13
+        timeline = np.arange(runtime)
+
+        # Default to the canvas center; the canvas can be smaller than the old
+        # hardcoded (13,13) default, which indexed out of bounds.
+        yDim, xDim = store["AM"].shape[1], store["AM"].shape[2]
+        xPos = xDim // 2
+        yPos = yDim // 2
         if clickData:
-            xPos = clickData['points'][0]['x']
-            yPos = clickData['points'][0]['y']
+            xPos = min(int(clickData['points'][0]['x']), xDim - 1)
+            yPos = min(int(clickData['points'][0]['y']), yDim - 1)
 
         figs = make_subplots(rows=6, cols=1,
                     shared_xaxes=True,
@@ -715,10 +705,8 @@ def updateLineGraphs(clickData, stim, timePoint, store):
             
         
     except Exception as ex:
-        template = "An exception of type {0} occurred while loading line graphs. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        print(message)
-        raise PreventUpdate 
+        log_exc("loading line graphs", ex)
+        raise PreventUpdate
 
     return figs
 
@@ -760,14 +748,16 @@ def toggle_load_modal(n1, is_open):
     [Input("load-exps-creator","value"),],	
     prevent_initial_call=True,
 )	
-def load_trial_names(creator):	
-    """Callback to query dynamoDB for all the trial names saved by the creator and update the dropdown options. """
-    print("Loading creators")
-    if(creator and creator != ""):		
-        response = dynamodb.Table('ragnaroc-trial-names').query(	
-                KeyConditionExpression=Key('creator').eq(creator)	
-            )
-        return [{"label" : i["name"] , "value" : i["name"]} for i in response["Items"]]	
+def load_trial_names(creator):
+    """Callback to query storage for all the trial names saved by the creator and update the dropdown options. """
+    logger.info("Loading trial names")
+    if(creator and creator != ""):
+        try:
+            names = storage.list_trial_names(creator)
+        except Exception as ex:
+            log_exc("listing saved experiments", ex)
+            return []
+        return [{"label": name, "value": name} for name in names]
     else:
         raise PreventUpdate
 
@@ -781,31 +771,31 @@ def load_trial_names(creator):
         Output("load-alert", "is_open"),
         Output("loaded-exps-dropdown", "value"),
         Output("load-exps-creator","value"),
-        Output("results-visual", "style"), 
-    ],	
-    [Input("load-creator-exp","n_clicks"),],	
-    [State("loaded-exps-dropdown","value"), State("load-exps-creator","value"),],	
-)	
-def load_trials(n1, name, creator):	
-    """Callback to query dynamoDB for the trial selected by the user and update the data tables and other relevant information for the trial. """
+        Output("results-visual", "style"),
+        Output('canvas-size','value'),
+        Output('mask-size','value'),
+    ],
+    [Input("load-creator-exp","n_clicks"),],
+    [State("loaded-exps-dropdown","value"), State("load-exps-creator","value"),],
+)
+def load_trials(n1, name, creator):
+    """Callback to query storage for the trial selected by the user and update the data tables and other relevant information for the trial. """
     if n1 is None:
         raise PreventUpdate
-    
+
     try:
-        print("Loading experiments") 
-        response = dynamodb.Table('ragnaroc-trials').query(	
-                KeyConditionExpression=Key('name').eq(name) & Key('creator').eq(creator)
-            )	
-        if("stimName" in response["Items"][0]["stimulus-types"][0] and "name" in response["Items"][0]["visual-objects"][0]):
-            return response["Items"][0]["stimulus-types"], response["Items"][0]["visual-objects"], response["Items"][0]["runtime"], response["Items"][0]["name"], False, False, None, None, {"display": "none"}
+        logger.info("Loading experiment %r by %r", name, creator)
+        trial = storage.get_trial(creator, name)
+        if trial is not None and trial["stim_types"] and trial["vis_objs"]:
+            return (trial["stim_types"], trial["vis_objs"], trial["runtime"], trial["name"],
+                    False, False, None, None, {"display": "none"},
+                    trial["canvas"] or 27, trial["mask"] or 3)
         else:
-            return [], [], None, None, False, True, None, None, {"display": "none"}
+            return [], [], None, None, False, True, None, None, {"display": "none"}, no_update, no_update
 
     except Exception as ex:
-        template = "An exception of type {0} occurred while loading experiment from database. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        print(message)
-        return [], [], None, None, False, True, None, None, {"display": "none"}
+        log_exc("loading experiment from storage", ex)
+        return [], [], None, None, False, True, None, None, {"display": "none"}, no_update, no_update
 
 """Clientside callback to scroll down to the results when the simulation completes. """
 app.clientside_callback(
@@ -824,40 +814,7 @@ app.clientside_callback(
     [State('surface-viz', 'id')]
 )
 
-def saveExp(creator, expName, runtime, stimTypes, visObjs, rewrite):	
-    """Function to call dynamoDB and insert new trials. """
-    try:	
-        # Check if experiment with same name exists
-        response = dynamodb.Table('ragnaroc-trial-names').get_item(Key={'name':expName, 'creator':creator})	
-        if("Item" in response and not rewrite):
-            return False
-
-        exp = {		
-            "creator" : str(creator),	
-            "name": str(expName),	
-            "runtime": str(runtime),	
-            "stimulus-types": json.loads(json.dumps(stimTypes), parse_float=Decimal),	
-            "visual-objects" : json.loads(json.dumps(visObjs), parse_float=Decimal),	
-        }	
-        expName = {		
-            "creator" : str(creator),	
-            "name": str(expName),	
-        }	
-        # Add to DynamoDB	
-        dynamodb.Table('ragnaroc-trials').put_item(Item=exp)	
-        dynamodb.Table('ragnaroc-trial-names').put_item(Item=expName)	        
-        print("Trial by {} added to dynamoDB".format(str(creator)))	
-        return True	
-        	
-    except Exception as ex:	
-        template = "An exception of type {0} occurred while saving experiment. Arguments:\n{1!r}"	
-        message = template.format(type(ex).__name__, ex.args)	
-        print(message)	
-        return False
-
 if __name__ == '__main__':
     """The start point of the application. """
-    # app.run_server()
-    app.run_server(debug=True)
-    # app.run_server(debug=True,port=8080)
-    # application.run_server(debug=True,port=8080)
+    debug = os.getenv("RAGNAROC_DEBUG", "").lower() in ("1", "true", "yes")
+    app.run(debug=debug, port=int(os.getenv("PORT", "8050")))
