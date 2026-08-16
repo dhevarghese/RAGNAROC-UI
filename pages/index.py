@@ -1,119 +1,70 @@
+"""Landing page: what RAGNAROC is, how the tool works, and a way in."""
+
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
+
 def serve_layout(app):
     return html.Div(
-        id="root",
+        id="home-page",
         children=[
-            # Main body
             html.Div(
-                id="home-container",
+                className="hero",
                 children=[
-                    # Banner display
-                    banner(app),
-                    RagnarocDetailsDiv(),
-                    # Link to the trial section of the portal
-                    experimentLink(),
-                ],
-            ),
-        ]
-    )
-
-def banner(app):
-    return html.Div(
-        id="banner",
-        children=[
-            html.Img(
-                id="logo", src=app.get_asset_url("logo.png")
-            ),
-            html.H2("Ragnaroc", id="title", style={"font-family":"Norse", "marginTop":"1rem",}),
-        ],
-    )
-
-def RagnarocDetailsDiv():
-    # Detailed information about the project, aka, the actual body of the index page.
-    return html.Div(
-        id="ragnaroc-details",
-        children=[
-            html.Div(
-                [
+                    html.Img(className="hero-logo", src=app.get_asset_url("logo.png")),
+                    html.H1("Ragnaroc", className="hero-title"),
                     html.P(
-                        "A quintessential challenge for any perceptual system is the need to focus on task-relevant \
-                        information without being blindsided by unexpected, yet important information. ",
-                        className="para-spacing",
-                        style={"textAlign":"center",},
-                    ), 
-
-                    html.P("The human visual system incorporates several solutions to this challenge, one of which is a reflexive covert \
-                        attention system that is rapidly responsive to both the physical salience and the task-relevance of \
-                        new information.",
-                        className="para-spacing",
-                        style={"textAlign":"center",},  
+                        "An interactive simulator of reflexive visual attention. Describe a simple visual "
+                        "experiment — what appears, where, and when — and watch the RAGNAROC model predict how "
+                        "attention deploys across the visual field, down to the simulated EEG.",
+                        className="hero-lede",
                     ),
-
-                    html.P("RAGNAROC presents a model that simulates behavioral and neural correlates of \
-                        reflexive attention as the product of brief neural attractor states that are formed across the visual \
-                        hierarchy when attention is engaged. Such attractors emerge from an attentional gradient \
-                        distributed over a population of topographically organized neurons and serve to focus processing \
-                        at one or more locations in the visual field, while inhibiting the processing of lower priority \
-                        information.",
-                        className="para-spacing",
-                        style={"textAlign":"justify",}, 
-                    ),
-
-                    html.P("The model moves towards a resolution of key debates about the nature of reflexive \
-                        attention, such as whether it is parallel or serial, and whether suppression effects are distributed \
-                        in a spatial surround, or selectively at the location of distractors. Most importantly, the model \
-                        develops a framework for understanding the neural mechanisms of visual attention as a \
-                        spatiotopic decision process within a hierarchy and links them to observable correlates such as \
-                        accuracy, reaction time, and the N2pc and PD components of the EEG. This last contribution is \
-                        the most crucial for repairing the disconnect that exists between our understanding of behavioral \
-                        and neural correlates of attention. ",
-                        className="para-spacing",
-                    ),
-                    # Links to the paper and preprint.
-                    html.Div(
-                        children=[
-                            html.A("Check the preprint here! ",
-                                href="https://www.biorxiv.org/content/10.1101/406124v4",
-                                target="_blank",
-                                className="para-spacing",
-                                style={"color":"yellow",},
-                            ),  
-
-                            html.A("Check the official psych review here! ",
-                                href="https://psycnet.apa.org/record/2020-58898-001",
-                                target="_blank",
-                                className="para-spacing",
-                                style={"color":"yellow",},
-                            ),  
-                        ], 
-                        id="center-links", 
+                    dcc.Link(
+                        dbc.Button("Open the experiment builder", id="goto-exp", color="warning", size="lg"),
+                        href="/ragnaroc",
+                        className="hero-cta",
                     ),
                 ],
-                style={"color":"White",},
+            ),
+            html.Div(
+                className="how-it-works",
+                children=[
+                    howCard("1", "Describe", "Define stimulus types (how salient and task-relevant they are) and place visual objects on a canvas — or start from a preset experiment."),
+                    howCard("2", "Simulate", "The model runs the trial millisecond by millisecond across interacting neural maps of the visual hierarchy."),
+                    howCard("3", "Explore", "Scrub through 3-D activation maps over time, click any location to inspect its time course, and compare against the simulated N2pc EEG component."),
+                ],
+            ),
+            html.Div(
+                className="about",
+                children=[
+                    html.H2("About the model", className="about-title"),
+                    html.P(
+                        "RAGNAROC (Wyble et al.) models reflexive covert attention as brief neural attractor states "
+                        "formed across the visual hierarchy. An attentional gradient over topographically organized "
+                        "neurons focuses processing at one or more locations while inhibiting lower-priority "
+                        "information — linking behavior to neural correlates such as the N2pc and PD components of "
+                        "the EEG.",
+                        className="about-text",
+                    ),
+                    html.Div(
+                        className="about-links",
+                        children=[
+                            html.A("Read the preprint", href="https://www.biorxiv.org/content/10.1101/406124v4", target="_blank"),
+                            html.A("Psychological Review paper", href="https://psycnet.apa.org/record/2020-58898-001", target="_blank"),
+                        ],
+                    ),
+                ],
             ),
         ],
     )
 
-def experimentLink():
-    return dcc.Link(
+
+def howCard(number, title, text):
+    return html.Div(
+        className="how-card",
         children=[
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            dbc.Button(
-                                "Let's run an experiment",
-                                id="goto-exp",
-                                color="warning",
-                            ),
-                        ],
-                        className="d-grid gap-2 col-6 mx-auto",
-                    ),
-                ],
-            ),
+            html.Span(number, className="step-number"),
+            html.H3(title, className="how-title"),
+            html.P(text, className="how-text"),
         ],
-        href="/ragnaroc",
-        style = {"textDecoration":"none"},
     )

@@ -1,5 +1,6 @@
 """Callbacks for the experiment builder: stimulus types, visual objects, presets."""
 
+import plotly.graph_objects as go
 from dash import callback_context
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import Input, Output, State
@@ -7,24 +8,55 @@ from dash_extensions.enrich import Input, Output, State
 from callbacks.common import PRESETS, PRESET_CANVAS, PRESET_MASK, PRESET_RUNTIME
 
 
-def register(app):
-    @app.callback(Output('stim-table', 'style'), Output('vo-table', 'style'),
-                  Input('exp-form-tabs', 'value'))
-    def render_content(tab):
-        """ Update style depending on selected tab."""
-        styleDisplay = {
-            "display": "block",
-            "marginTop": "2.5rem",
-        }
-        styleHide = {
-            "display": "none",
-            "marginTop": "2.5rem",
-        }
-        if tab == 'stim-form':
-            return styleDisplay, styleHide
-        elif tab == 'vo-form':
-            return styleHide, styleDisplay
+def canvas_preview_figure(rows, canvas):
+    """Small scatter of the placed visual objects on the canvas grid."""
+    try:
+        canvas = int(canvas) if canvas else 27
+    except (TypeError, ValueError):
+        canvas = 27
 
+    fig = go.Figure()
+    by_stim = {}
+    for row in rows or []:
+        try:
+            by_stim.setdefault(str(row.get("stimulus", "?")), []).append(
+                (float(row["X"]), float(row["Y"]), str(row.get("name", "")),
+                 float(row.get("latency", 0) or 0), float(row.get("duration", 0) or 0))
+            )
+        except (TypeError, ValueError, KeyError):
+            continue
+
+    for stim, pts in sorted(by_stim.items()):
+        fig.add_trace(go.Scatter(
+            x=[p[0] for p in pts], y=[p[1] for p in pts],
+            mode="markers+text",
+            text=[p[2] for p in pts], textposition="top center",
+            name="stimulus " + stim,
+            marker=dict(size=14, line=dict(width=1, color="white")),
+            customdata=[[p[3], p[4]] for p in pts],
+            hovertemplate="%{text}: (%{x}, %{y})<br>appears at %{customdata[0]} ms, lasts %{customdata[1]} ms<extra></extra>",
+        ))
+
+    fig.update_layout(
+        template="plotly_dark",
+        title=dict(text="Canvas preview ({0}×{0})".format(canvas), font=dict(size=14)),
+        height=320,
+        margin=dict(l=40, r=20, t=50, b=40),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0.2)",
+        legend=dict(orientation="h", y=-0.18),
+        xaxis=dict(range=[0, canvas + 1], title="X", dtick=max(1, canvas // 9)),
+        yaxis=dict(range=[0, canvas + 1], title="Y", dtick=max(1, canvas // 9), scaleanchor="x"),
+    )
+    if not by_stim:
+        fig.add_annotation(
+            text="No objects yet — add one on the left,<br>or pick a preset above.",
+            showarrow=False, font=dict(color="#aab0bc", size=13),
+        )
+    return fig
+
+
+def register(app):
     @app.callback(
         Output('vis-objs-table','data'), Output("vo-alert", "is_open"), Output("vo-dup-alert", "is_open"), Output("results-visual", "style"),
         [
@@ -176,3 +208,26 @@ def register(app):
         """ Callback to include user defined stimuli in the dropdown. """
         opts = [row['stimName'] for row in rows]
         return opts, opts
+
+    @app.callback(
+        Output('preset-description', 'children'),
+        Input('preset-experiment-choice', 'value'),
+        prevent_initial_call=True,
+    )
+    def describePreset(preset):
+        """ Show a one-line description of the chosen preset. """
+        if preset and preset in PRESETS:
+            return "{} All steps below have been filled in — tweak anything, then run.".format(PRESETS[preset]["description"])
+        return "Pick a preset to fill every step with a ready-made experiment — or skip this and build your own below."
+
+    @app.callback(
+        Output('canvas-preview', 'figure'),
+        [
+            Input('vis-objs-table', 'data'),
+            Input('canvas-size', 'value'),
+        ],
+        prevent_initial_call=False,
+    )
+    def updateCanvasPreview(rows, canvas):
+        """ Live preview of where the visual objects sit on the canvas. """
+        return canvas_preview_figure(rows, canvas)

@@ -87,6 +87,7 @@ def register(app):
             State('mask-size','value'),
         ],
         prevent_initial_call=True,
+        running=[(Output("run-sim", "disabled"), True, False)],
     )
     def runSimulation(clicks, sts, vos, runtime, expName, creator, canvas, mask):
         """ Validate the experiment and run the RAGNAROC model. The core of the system. """

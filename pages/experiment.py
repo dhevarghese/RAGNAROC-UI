@@ -1,327 +1,346 @@
-from dash import dcc, html
+"""Experiment builder page: a guided four-step flow plus the results section.
+
+Step 1 defines stimulus types, step 2 places visual objects on the canvas
+(with a live preview), step 3 sets the simulation parameters, and step 4 names
+and runs the experiment. Results appear below once a simulation finishes.
+"""
+
+from dash import dash_table, dcc, html
 import dash_bootstrap_components as dbc
 
-from pages.experiment_sidebar import  *
-from pages.experiment_results import  *
+from pages.experiment_results import experimentResults
+
+TABLE_STYLE = dict(
+    row_deletable=True,
+    style_as_list_view=True,
+    editable=True,
+    style_cell={'padding': '8px', 'backgroundColor': 'transparent', 'fontFamily': 'inherit'},
+    style_header={
+        'padding': '8px',
+        'backgroundColor': 'rgba(0,0,0,0.25)',
+        'color': '#aab0bc',
+        'fontWeight': '600',
+        'border': 'none',
+        'textTransform': 'uppercase',
+        'fontSize': '0.72rem',
+        'letterSpacing': '0.06em',
+    },
+    style_data={'backgroundColor': 'transparent', 'color': 'white', 'border': '1px solid rgba(255,255,255,0.06)'},
+    style_data_conditional=[
+        {"if": {"state": "active"}, "backgroundColor": "rgba(252,205,97,0.12)", "border": "1px solid #fccd61", "color": "#fccd61"},
+        {"if": {"state": "selected"}, "backgroundColor": "rgba(255,255,255,0.08)"},
+    ],
+)
+
 
 def serve_layout(app):
     return html.Div(
+        id="exp-page",
         children=[
+            topBar(app),
+            html.Div(id="garbage-output-0"),
             html.Div(
-                id="root",
+                className="exp-main",
                 children=[
-                    mainBody(app),
-                    sideBar(),
+                    introCard(),
+                    stepStimulusTypes(),
+                    stepVisualObjects(),
+                    stepSettingsAndRun(),
                 ],
             ),
             experimentResults(),
+            saveModal(),
+            rewriteModal(),
+            loadModal(),
+            toasts(),
         ],
     )
 
-def mainBody(app):
+
+def topBar(app):
     return html.Div(
-        id="app-container",
+        className="top-bar",
         children=[
-            # Banner display
-            html.Div(
-                id="top-bar",
-                children= banner(app),
-                style={
-                    "display":"flex",
-                    "justify-content":"space-between",
-                }
+            dcc.Link(
+                className="top-bar-brand",
+                href="/",
+                children=[
+                    html.Img(className="top-bar-logo", src=app.get_asset_url("logo.png")),
+                    html.Span("Ragnaroc", className="top-bar-title"),
+                ],
             ),
             html.Div(
-                id="experiment-settings",
-                children= experimentForms(),
+                className="top-bar-actions",
+                children=[
+                    dbc.Button([html.I(className="fa-solid fa-folder-open me-2"), "Load"], id="load-sim", outline=True, color="light", size="sm"),
+                    dbc.Button([html.I(className="fa-solid fa-floppy-disk me-2"), "Save"], id="save-exp", outline=True, color="light", size="sm"),
+                ],
             ),
-            html.Div(id="garbage-output-0"),
+        ],
+    )
+
+
+def introCard():
+    presets = [
+        {"label": "Brisson — single relevant target", "value": "Brisson"},
+        {"label": "Single — one lasting object", "value": "Single"},
+        {"label": "Same — two objects, same place", "value": "Same"},
+        {"label": "Diff — two objects, different places", "value": "Diff"},
+        {"label": "MidTLateralD — target + distractor", "value": "MidTLateralD"},
+        {"label": "EimerGrubert — two rapid targets", "value": "EimerGrubert"},
+    ]
+    return html.Div(
+        className="step-card intro-card",
+        children=[
+            html.H1("Build an experiment", className="page-heading"),
+            html.P(
+                "RAGNAROC simulates how visual attention reacts to objects appearing in the visual field. "
+                "Define what can appear (step 1), where and when it appears (step 2), then run the model to "
+                "watch attention unfold across simulated brain maps and EEG.",
+                className="page-lede",
+            ),
             html.Div(
-                [
+                className="preset-row",
+                children=[
+                    html.Div(
+                        children=[
+                            html.Label("Quick start with a preset", htmlFor="preset-experiment-choice", className="field-label"),
+                            dcc.Dropdown(
+                                options=presets,
+                                value=None,
+                                id="preset-experiment-choice",
+                                placeholder="Choose a preset experiment…",
+                            ),
+                        ],
+                        className="preset-picker",
+                    ),
+                    html.P(
+                        "Pick a preset to fill every step with a ready-made experiment — or skip this and build your own below.",
+                        id="preset-description",
+                        className="field-help preset-description",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def stepHeader(number, title, subtitle):
+    return html.Div(
+        className="step-header",
+        children=[
+            html.Span(number, className="step-number"),
+            html.Div([
+                html.H2(title, className="step-title"),
+                html.P(subtitle, className="step-subtitle"),
+            ]),
+        ],
+    )
+
+
+def stepStimulusTypes():
+    return html.Div(
+        className="step-card",
+        children=[
+            stepHeader(
+                "1", "Define stimulus types",
+                "A stimulus type is a kind of thing that can appear — a target, a distractor. Each has a "
+                "bottom-up weight (how physically salient it is) and a top-down weight (how relevant it is "
+                "to the task), both from 0 to 1.",
+            ),
+            html.Div(
+                className="step-body two-col",
+                children=[
+                    html.Div(
+                        className="form-col",
+                        children=[
+                            html.Label("Name", htmlFor="stim-type-name", className="field-label"),
+                            dcc.Input(id="stim-type-name", className="text-field", placeholder='e.g. "target"', type='text', value=""),
+                            html.Div(
+                                className="weight-row",
+                                children=[
+                                    html.Label("Top-down weight (task relevance)", className="field-label"),
+                                    dcc.Input(id="text-td-weight", className="text-field weight-field hideNumScroll", type='number', value=0.5, step=0.01, min=0, max=1),
+                                ],
+                            ),
+                            dcc.Slider(0, 1, value=0.5, id="top-down", tooltip={"placement": "bottom"}, className="slider-margin"),
+                            html.Div(
+                                className="weight-row",
+                                children=[
+                                    html.Label("Bottom-up weight (salience)", className="field-label"),
+                                    dcc.Input(id="text-bu-weight", className="text-field weight-field hideNumScroll", type='number', value=0.5, step=0.01, min=0, max=1),
+                                ],
+                            ),
+                            dcc.Slider(0, 1, value=0.5, id="bottom-up", tooltip={"placement": "bottom"}, className="slider-margin"),
+                            dbc.Button("Add stimulus type", id="add-stim-type", n_clicks=0, className="add-btn", color="warning"),
+                        ],
+                    ),
+                    html.Div(
+                        className="table-col",
+                        children=[
+                            html.P("Your stimulus types (click a cell to edit, × to remove):", className="field-help"),
+                            dash_table.DataTable(
+                                id='stim-types-table',
+                                columns=[
+                                    {'name': 'Name', 'id': 'stimName'},
+                                    {'name': 'Top-down', 'id': 'td', 'type': 'numeric'},
+                                    {'name': 'Bottom-up', 'id': 'bu', 'type': 'numeric'},
+                                ],
+                                data=[],
+                                **TABLE_STYLE,
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def stepVisualObjects():
+    return html.Div(
+        className="step-card",
+        children=[
+            stepHeader(
+                "2", "Place visual objects",
+                "A visual object is one appearance of a stimulus type on the canvas: it shows up at position "
+                "(X, Y) after a delay (latency, ms) and stays visible for a while (duration, ms). The preview "
+                "shows your current layout.",
+            ),
+            html.Div(
+                className="step-body two-col",
+                children=[
+                    html.Div(
+                        className="form-col",
+                        children=[
+                            html.Label("Name", htmlFor="vis-obj-name", className="field-label"),
+                            dcc.Input(id="vis-obj-name", className="text-field", placeholder='e.g. "T1"', type='text', value=""),
+                            html.Div(
+                                className="field-grid",
+                                children=[
+                                    html.Div([
+                                        html.Label("X", htmlFor="vis-obj-x", className="field-label"),
+                                        dcc.Input(id="vis-obj-x", className="text-field hideNumScroll", type='number', min=1, max=27, value=None),
+                                        dbc.Tooltip("Range: (1,27) ", target="vis-obj-x", id="vis-obj-x-tooltip", placement="top"),
+                                    ]),
+                                    html.Div([
+                                        html.Label("Y", htmlFor="vis-obj-y", className="field-label"),
+                                        dcc.Input(id="vis-obj-y", className="text-field hideNumScroll", type='number', min=1, max=27, value=None),
+                                        dbc.Tooltip("Range: (1,27) ", target="vis-obj-y", id="vis-obj-y-tooltip", placement="top"),
+                                    ]),
+                                    html.Div([
+                                        html.Label("Latency (ms)", htmlFor="vis-obj-latency", className="field-label"),
+                                        dcc.Input(id="vis-obj-latency", className="text-field hideNumScroll", type='number', min=0, max=1000, value=None),
+                                    ]),
+                                    html.Div([
+                                        html.Label("Duration (ms)", htmlFor="vis-obj-duration", className="field-label"),
+                                        dcc.Input(id="vis-obj-duration", className="text-field hideNumScroll", type='number', min=0, max=1000, value=None),
+                                    ]),
+                                ],
+                            ),
+                            html.Label("Stimulus type", htmlFor="vis-obj-stim-type", className="field-label"),
+                            dcc.Dropdown(options=[], value='', id="vis-obj-stim-type", placeholder="Pick from step 1…"),
+                            dbc.Button("Add visual object", id="vis-obj-add", n_clicks=0, className="add-btn", color="warning"),
+                        ],
+                    ),
+                    html.Div(
+                        className="table-col",
+                        children=[
+                            dcc.Graph(
+                                id="canvas-preview",
+                                config={"displayModeBar": False},
+                                className="canvas-preview",
+                            ),
+                            dash_table.DataTable(
+                                id='vis-objs-table',
+                                columns=[
+                                    {'name': 'Name', 'id': 'name'},
+                                    {'name': 'X', 'id': 'X'},
+                                    {'name': 'Y', 'id': 'Y'},
+                                    {'name': 'Duration', 'id': 'duration'},
+                                    {'name': 'Latency', 'id': 'latency'},
+                                    {'name': 'Stimulus', 'id': 'stimulus'},
+                                ],
+                                data=[],
+                                **TABLE_STYLE,
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+def stepSettingsAndRun():
+    return html.Div(
+        className="step-card",
+        children=[
+            stepHeader(
+                "3", "Configure and run",
+                "Set how long and on how big a canvas the simulation runs, give the experiment a name, and hit Run. "
+                "Results appear below when it finishes — usually within a few seconds.",
+            ),
+            html.Div(
+                className="step-body settings-row",
+                children=[
+                    html.Div([
+                        html.Label("Runtime (ms)", htmlFor="exp-total-time", className="field-label"),
+                        dcc.Input(id="exp-total-time", className="text-field hideNumScroll", type='number', min=1, value=600),
+                        html.P("How many milliseconds to simulate.", className="field-help"),
+                    ]),
+                    html.Div([
+                        html.Label("Canvas size", htmlFor="canvas-size", className="field-label"),
+                        dcc.Input(id="canvas-size", className="text-field hideNumScroll", type='number', min=1, max=50, value=27),
+                        html.P("The visual field is an N×N grid (1–50).", className="field-help"),
+                    ]),
+                    html.Div([
+                        html.Label("Mask size", htmlFor="mask-size", className="field-label"),
+                        dcc.Input(id="mask-size", className="text-field hideNumScroll", type='number', min=1, max=10, value=3),
+                        html.P("Neighborhood used for lateral interactions (1–10).", className="field-help"),
+                    ]),
+                ],
+            ),
+            html.Div(
+                className="run-row",
+                children=[
+                    html.Div(
+                        className="run-name",
+                        children=[
+                            html.Label("Experiment name", htmlFor="exp-name", className="field-label"),
+                            dcc.Input(id="exp-name", className="text-field", placeholder='e.g. "my first trial"', type='text', value=""),
+                        ],
+                    ),
                     dcc.Loading(
-                        [
+                        children=[
                             dcc.Store(id='sim-store'),
                             dcc.Store(id='original-store'),
-                            saveModal(),
-                            rewriteModal(),
-                            loadModal(),
-                            simulationOperationButtons(),
+                            dbc.Button(
+                                [html.I(className="fa-solid fa-bolt me-2"), "Run simulation"],
+                                id="run-sim", n_clicks=0, color="warning", size="lg", className="run-btn",
+                            ),
                         ],
                         type="circle",
                         color="#fccd61",
-                        style={"marginTop":"1rem", "marginLeft":"1rem"},
-                    ),
-                ],
-            ),
-            html.Div(
-                children= alerts(),
-                style={"marginTop":"1.5rem"}
-            ),
-        ],
-    )
-
-def banner(app):
-    return [
-        html.Div(
-            id="banner",
-            children=[
-                html.Img(
-                    id="logo", src=app.get_asset_url("logo.png")
-                ),
-                html.H2("Ragnaroc", id="title", style={"font-family":"Norse", "marginTop":"1rem",}),
-            ],
-        ),
-        html.Div(
-            [
-                html.P("Run time", style={"display":"contents", "color":"white"}),
-                dcc.Input(
-                    id="exp-total-time",
-                    className="form-name-input",
-                    placeholder='ms',
-                    type='number',
-                    value='',
-                    style= {"width":"30%", "text-align": "center"}
-                ),
-            ],
-            style={
-                "alignSelf":"center",
-                "text-align":"end",
-            }
-        ),
-    ]
-
-def experimentForms():
-    return html.Div(
-        id="experiment-forms",
-        children=[
-            html.Div(
-                [
-                    html.H1('Experiment ', style={"display": "inline", }),
-                    dcc.Input(
-                        id="exp-name",
-                        className="bottom-white-outline-input",
-                        placeholder='Name',
-                        type='text',
-                    ),
-                ],
-                className="exp-header",
-            ),
-            
-            html.Div(
-                className="tabs-div",
-                children=[
-                    dcc.Tabs(
-                        id="exp-form-tabs",
-                        value="stim-form",
-                        children=[
-                            dcc.Tab(
-                                label='Stimulus Types', 
-                                value="stim-form",
-                                children=stim_type_form(),
-                                className='custom-tab-2',
-                                selected_className='custom-tab-2--selected',
-                            ),
-                            dcc.Tab(
-                                label='Visual Objects', 
-                                value="vo-form",
-                                children=visual_objects_form(),
-                                className='custom-tab-2',
-                                selected_className='custom-tab-2--selected',
-                            ),
-                        ],
-                        style={"margin":"2rem",}
+                        parent_className="run-loading",
                     ),
                 ],
             ),
         ],
     )
 
-def stim_type_form():
-    return html.Div(
-        className="form-spacing",
-        children=[
-            html.P("Stimulus",style={"display":"inline"}),
-            dcc.Input(
-                id="stim-type-name",
-                className="form-name-input",
-                placeholder='Name',
-                type='text',
-                value='',
-            ),
-
-            html.Div(children=[
-                html.Div(
-                    children=[
-                        html.P("Top-Down Weight", style={"margin": "1.5rem 0rem" }),
-                        dcc.Input(
-                            id="text-td-weight",
-                            className="hideNumScroll weight-texts",
-                            type='number', value=0.5, step=0.01, min=0, max=1,
-                        ),
-                    ],
-                    className="stim-form-weights-div",
-                ),
-                dcc.Slider(0,1,value=0.5, id="top-down", tooltip={"placement": "bottom", }, className="slider-margin"),
-                
-                html.Div(
-                    children=[
-                        html.P("Bottom-Up Weight", style={"margin": "1.5rem 0rem"}),
-                        dcc.Input(
-                            id="text-bu-weight",
-                            className="hideNumScroll weight-texts",
-                            type='number', value=0.5, step=0.01, min=0, max=1,
-                        ),
-                    ],
-                    className="stim-form-weights-div",
-                ),
-                dcc.Slider(0,1,value=0.5, id="bottom-up", tooltip={"placement": "bottom", }, className="slider-margin"),
-                
-                html.Button(
-                    html.I(className="fas fa-solid fa-plus"),
-                    id="add-stim-type",
-                    className="form-add-btn",
-                    form="stim-type-form",
-                    n_clicks=0,
-                    style={"marginTop": "20px",}
-                ),
-            ], style={"margin": "0rem 1rem 0.5rem"}
-            ), 
-        ]
-    )
-
-def visual_objects_form():
-    return html.Div(
-        className="form-spacing",
-        children=[
-            html.P("Visual Objects",style={"display":"inline"}),
-            dcc.Input(
-                id="vis-obj-name",
-                className="form-name-input",
-                placeholder='Name',
-                type='text',
-                value='',
-            ),
-
-            html.Div(children=[
-                html.Div(children=[
-                    html.P("X", 
-                        style={
-                                "paddingTop":"16px", 
-                                "paddingRight":"44px", 
-                                "paddingLeft":"28px" 
-                            }
-                        ),
-                    dcc.Input(
-                        id="vis-obj-x",
-                        placeholder="Coordinate",
-                        type='number', min=1, max=27,
-                        className="hideNumScroll vis-obj-form-input",
-                    ),
-                    dbc.Tooltip(
-                        "Range: (1,27) ",
-                        target="vis-obj-x",
-                        id="vis-obj-x-tooltip",
-                        placement="top",
-                    ),
-
-                    html.P("Y", style={"paddingTop":"16px", "paddingRight":"36px", "paddingLeft":"72px"}),
-                    dcc.Input(
-                        id="vis-obj-y",
-                        placeholder="Coordinate",
-                        type='number', min=1, max=27,
-                        className="hideNumScroll  vis-obj-form-input",
-                    ),
-                    dbc.Tooltip(
-                        "Range: (1,27) ",
-                        target="vis-obj-y",
-                        id="vis-obj-y-tooltip",
-                        placement="top",
-                    ),
-                ], style={"display":"flex", "marginBottom":"2rem", "marginTop":"2rem", "justifyContent":"space-around"}),
-
-                html.Div(children=[
-                    html.P("Duration", style={"paddingTop":"16px", "paddingRight":"12px" }),
-                    dcc.Input(
-                        id="vis-obj-duration",
-                        placeholder="in milli-seconds",
-                        type='number', min=0, max=1000,
-                        className="hideNumScroll  vis-obj-form-input",
-                    ),
-                    dbc.Tooltip(
-                        "Maximum: 1000 ms ",
-                        target="vis-obj-duration",
-                        placement="bottom",
-                    ),
-
-                    html.P("Latency", style={"paddingTop":"16px", "paddingRight":"12px", "paddingLeft":"48px"}),
-                    dcc.Input(
-                        id="vis-obj-latency",
-                        placeholder="in milli-seconds",
-                        type='number',
-                        min=0, max=1000,
-                        className="hideNumScroll vis-obj-form-input",
-                    ),
-                    dbc.Tooltip(
-                        "Maximum: 1000 ms ",
-                        target="vis-obj-latency",
-                        placement="bottom",
-                    ),
-                ], style={"display":"flex", "justifyContent":"space-around", "marginBottom":"2rem", "marginTop":"2rem"}),
-                
-                html.Div(
-                    children=[
-                        html.P("Stimulus type", 
-                            style={"width":"50%", "textAlign": "center"}
-                        ),
-                        html.Div(
-                            dcc.Dropdown(options=[], value='', id="vis-obj-stim-type",), 
-                            style={"width":"35%",}
-                        ),
-                    ],
-                    style={
-                        "display":"flex",
-                        "margin":"2.6rem 1rem 1.6rem",
-                    }
-                ),
-                
-                html.Button(
-                    html.I(className="fas fa-solid fa-plus"),
-                    id="vis-obj-add",
-                    className="form-add-btn",
-                    n_clicks=0,
-                    style={"marginTop": "1.625rem",}
-                    ),
-            ], style={"margin": "1rem 1rem 0.5rem",}
-            ), 
-        ]
-    )
 
 def saveModal():
     return dbc.Modal(
         [
-            dbc.ModalHeader( dbc.ModalTitle("But, who are you?"), className="sl-modal-header",),
+            dbc.ModalHeader(dbc.ModalTitle("Save experiment"), className="sl-modal-header"),
             dbc.ModalBody(
-                className="sl-modal-body",
                 children=[
-                    html.P("Let us know your code name, experimenter."),
-                    dcc.Input(
-                        id="exp-creator-name",
-                        placeholder='Thor',
-                        type='text',
-                    ),          
-                    html.P("Note: This name may not be unique. This place attracts experimenters..."),
-                    html.Div(
-                        [
-                            dbc.Button(
-                                children = ["Save"],
-                                id="save-creator-exp",
-                                className="sl-button",
-                                color="warning",
-                            ),
-                        ],
-                        className="d-grid gap-2 col-3 mx-auto",
-                    ),
-                ], 
+                    html.P("Whose experiment is this? Saved experiments are grouped by creator name so you can load them back later."),
+                    dcc.Input(id="exp-creator-name", placeholder='Your name', type='text', value=""),
+                    dbc.Button("Save", id="save-creator-exp", n_clicks=0, className="sl-button"),
+                ],
+                className="sl-modal-body",
             ),
         ],
         id="creator-modal",
@@ -329,32 +348,22 @@ def saveModal():
         is_open=False,
     )
 
+
 def rewriteModal():
     return dbc.Modal(
         [
-            dbc.ModalHeader( dbc.ModalTitle("But, who are you?"), className="sl-modal-header",),
+            dbc.ModalHeader(dbc.ModalTitle("Overwrite experiment?"), className="sl-modal-header"),
             dbc.ModalBody(
-                className="sl-modal-body",
                 children=[
-                    html.P("This experiment name already exists in our records, in your name. Would you like to overwrite the setup?"),
+                    html.P("An experiment with this name already exists under your name. Overwrite it?"),
                     html.Div(
-                        [
-                            dbc.Button(
-                                children = ["Yes"],
-                                id="rewrite-accept",
-                                className="sl-button",
-                                color="warning",
-                            ),
-                            dbc.Button(
-                                children = ["No"],
-                                id="rewrite-deny",
-                                className="sl-button",
-                                color="warning",
-                            ),
+                        children=[
+                            dbc.Button("Overwrite", id="rewrite-accept", n_clicks=0, className="sl-button me-2"),
+                            dbc.Button("Cancel", id="rewrite-deny", n_clicks=0, className="sl-button"),
                         ],
-                        className="d-grid gap-2 col-3 mx-auto",
                     ),
-                ], 
+                ],
+                className="sl-modal-body",
             ),
         ],
         id="rewrite-modal",
@@ -362,57 +371,19 @@ def rewriteModal():
         is_open=False,
     )
 
+
 def loadModal():
     return dbc.Modal(
         [
-            dbc.ModalHeader( dbc.ModalTitle("Do I remember you?"), className="sl-modal-header",),
+            dbc.ModalHeader(dbc.ModalTitle("Load experiment"), className="sl-modal-header"),
             dbc.ModalBody(
-                className="sl-modal-body",
                 children=[
-                    html.Div(
-                        children=[
-                            html.P("Creator name:"),
-                            dcc.Input(
-                                id="load-exps-creator",
-                                className="bottom-white-outline-input",
-                                placeholder='Thor',
-                                type='text',
-                                debounce=True,
-                                style={ "marginLeft" : "3rem", "borderTop" : "none",}
-                            ),        
-                        ],
-                        style = {"display" : "flex", "marginTop" : "1rem", "marginBottom" : "2rem",}
-                    ),
-                    
-                    html.Div(
-                        children = [
-                            html.P("Select experiment: "), 
-                            html.Div(
-                                children=[
-                                    dcc.Dropdown(
-                                        [], 
-                                        id='loaded-exps-dropdown',
-                                    ),
-                                ],
-                                style={ "width" : "45%", "marginLeft" : "1rem",}
-                            ),
-                            
-                        ],
-                        style={ "display":"flex", "marginTop" : "1rem",},
-                    ),
-                    html.Div(
-                        [
-                            dbc.Button(
-                                children = ["Load"],
-                                id="load-creator-exp",
-                                className="sl-button",
-                                color="warning",
-                                style={"marginTop" : "1rem",}
-                            ),
-                        ],
-                        className="d-grid gap-2 col-3 mx-auto",
-                    ),
+                    html.P("Enter the creator name the experiment was saved under, then pick it from the list."),
+                    dcc.Input(id="load-exps-creator", placeholder='Creator name', type='text', value="", debounce=True),
+                    dcc.Dropdown(options=[], value=None, id='loaded-exps-dropdown', placeholder="Saved experiments…", className="load-dropdown"),
+                    dbc.Button("Load", id="load-creator-exp", n_clicks=0, className="sl-button"),
                 ],
+                className="sl-modal-body",
             ),
         ],
         id="load-exp-modal",
@@ -420,124 +391,18 @@ def loadModal():
         is_open=False,
     )
 
-def simulationOperationButtons():
+
+def toasts():
+    common = dict(is_open=False, fade=True, duration=4000)
     return html.Div(
+        className="toast-stack",
         children=[
-            html.Div(
-                [
-                    dbc.Button(
-                        children = [ html.I(className="fas fa-solid fa-vial", style={"margin-right":"1rem"}), "Load"],
-                        id="load-sim",
-                        className="sim-btns",
-                        color="warning",
-                    ),
-                ],
-                className="d-grid gap-2 col-3 mx-auto",
-            ),
-
-            html.Div(
-                [
-                    dbc.Button(
-                        #fa-bolt-lightning, fa-gears, "Run Simulation", 
-                        children = [ html.I(className="fas fa-solid fa-bolt-lightning", style={"margin-right":"1rem"}), "Simulate"],
-                        id="run-sim",
-                        className="sim-btns",
-                        color="warning",
-                    ),
-                ],
-                className="d-grid gap-2 col-3 mx-auto",
-            ),
-
-            html.Div(
-                [
-                    dbc.Button(#"Save experiment", 
-                        children = [ html.I(className="fas fa-solid fa-file-pen", style={"margin-right":"1rem"}), "Save"],
-                        id="save-exp",
-                        className="sim-btns",
-                        color="warning",
-                    ),
-                ],
-                className="d-grid gap-2 col-3 mx-auto",
-            ),
+            dbc.Alert("Experiment saved.", id="save-alert", color="success", **common),
+            dbc.Alert("Please enter valid inputs for stimulus type", id="stim-alert", color="danger", **common),
+            dbc.Alert("Duplicate stimulus names are not allowed", id="stim-dup-alert", color="warning", **common),
+            dbc.Alert("Please enter valid inputs for visual object", id="vo-alert", color="danger", **common),
+            dbc.Alert("Duplicate visual object names are not allowed", id="vo-dup-alert", color="warning", **common),
+            dbc.Alert("", id="run-sim-alert", color="danger", **common),
+            dbc.Alert("Could not load that experiment.", id="load-alert", color="danger", **common),
         ],
-        style={
-            "display":"flex",
-            "margin-top":"1rem",
-        }
     )
-
-def alerts():
-    return [
-        dbc.Alert(
-            "Experiment has been saved",
-            id="save-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="success",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "Please enter valid inputs for stimulus type",
-            id="stim-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="danger",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "Duplicate stimulus are not allowed",
-            id="stim-dup-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="warning",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "Please enter valid inputs for visual object",
-            id="vo-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="danger",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "Duplicate visual objects are not allowed",
-            id="vo-dup-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="warning",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            children=[],
-            id="run-sim-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="danger",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "An error occured while loading the requested experiment...",
-            id="load-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="danger",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-        dbc.Alert(
-            "Experiment name already exists. Please use another name!",
-            id="trial-dup-alert",
-            is_open=False,
-            fade=True,
-            duration=4000,
-            color="warning",
-            style={"margin":"0", "padding":"0.80rem"},
-        ),
-    ]
