@@ -1,8 +1,19 @@
 *.ipynb_notebooks
 # *.ipynb
 
-# Dash-extensions generated folder
+# Dash-extensions generated folders (serverside store cache)
 file_system_store/
+file_system_backend/
+
+# Compiled extension modules and Cython build output
+*.so
+*.pyd
+cython/ragnaroc.c
+cython/ragnaroc.html
+cython/build/
+
+# Local storage (SQLite database)
+data/
 
 ignore
 *.csv
