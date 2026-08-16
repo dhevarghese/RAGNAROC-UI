@@ -7,6 +7,27 @@ Current Status: Setup your experiments on a text based input interface. These wo
 
 Check out the website [here](http://ragnaroc.us-east-1.elasticbeanstalk.com/)
 
+# Running locally
+
+Requires Python 3.12, a C compiler, and the packages in the two requirements files:
+
+```bash
+pip install -r requirements.txt -r requirements-build.txt
+```
+
+Build the RAGNAROC model extension for your platform (the compiled `.so`/`.pyd` is not
+checked in), then start the app:
+
+```bash
+cd cython && python setup.py build_ext --inplace && mv ragnaroc.*.so .. && cd ..
+python application.py
+```
+
+The app serves at http://localhost:8050. Saved experiments and run logs go to a local
+SQLite database at `data/ragnaroc.db`. Optional environment variables: `RAGNAROC_DEBUG=1`
+enables Dash debug mode, `PORT` overrides the port, and `RAGNAROC_STORAGE=dynamo` (with
+standard AWS credentials in the environment) switches persistence to DynamoDB.
+
 # Features to be added
 - [ ] Eye movements
 - [ ] Experiment simulation
