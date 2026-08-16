@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ragnaroc",
+      "runtimeExecutable": "/Users/dvarghese/miniconda3/envs/ragnaroc/bin/python",
+      "runtimeArgs": ["application.py"],
+      "port": 8050
+    }
+  ]
+}
