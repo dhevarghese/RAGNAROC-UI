@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { PRESETS } from '../model/presets'
+import type { UndoState } from '../App'
 import type { Experiment } from '../model/types'
 import { loadLibrary, removeFromLibrary, saveToLibrary, shareUrl, type Action, type SavedExperiment } from '../state/experiment'
 
 interface Props {
   experiment: Experiment
   dispatch: (a: Action) => void
+  undoState: UndoState
   status: { running: boolean; progress: number | null; problems: string[]; error: string | null; elapsedMs?: number }
   onGuide: () => void
   onHome: () => void
 }
 
-export function TopBar({ experiment, dispatch, status, onGuide, onHome }: Props) {
+export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHome }: Props) {
   const [menu, setMenu] = useState<null | 'presets' | 'library'>(null)
   const [library, setLibrary] = useState<SavedExperiment[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -84,6 +86,10 @@ export function TopBar({ experiment, dispatch, status, onGuide, onHome }: Props)
       </div>
 
       <nav className="actions">
+        <div className="undo-group">
+          <button className="btn icon" onClick={undoState.undo} disabled={!undoState.canUndo} title="Undo (⌘Z)" aria-label="undo">↶</button>
+          <button className="btn icon" onClick={undoState.redo} disabled={!undoState.canRedo} title="Redo (⇧⌘Z)" aria-label="redo">↷</button>
+        </div>
         <div className="menu-wrap">
           <button className={`btn${menu === 'presets' ? ' active' : ''}`} onClick={() => setMenu(menu === 'presets' ? null : 'presets')}>Presets ▾</button>
           {menu === 'presets' && (

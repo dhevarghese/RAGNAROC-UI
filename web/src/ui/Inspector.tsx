@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import type { Experiment } from '../model/types'
+import type { Experiment, StimulusType } from '../model/types'
 import { stimColor, type Action } from '../state/experiment'
 
 interface Props {
@@ -54,12 +54,48 @@ function WeightField({ label, value, onChange, hint }: { label: string; value: n
 }
 
 /**
+ * Shown in place of a stimulus card when the user asks to remove a type that
+ * objects still use: reassign them to another type, remove them too, or cancel.
+ * `onDone(undefined)` cancels; `onDone('')` removes the objects; `onDone(id)` reassigns.
+ */
+function RemovePrompt({ stim, count, others, onDone }: {
+  stim: StimulusType; count: number; others: StimulusType[]; onDone: (reassignTo?: string) => void
+}) {
+  const [target, setTarget] = useState(others[0]?.id ?? '')
+  const noun = count === 1 ? '1 object uses' : `${count} objects use`
+  return (
+    <div className="remove-prompt">
+      <p>{noun} “{stim.name}”. What should happen to {count === 1 ? 'it' : 'them'}?</p>
+      {others.length > 0 && (
+        <div className="remove-row">
+          <select value={target} onChange={(e) => setTarget(e.target.value)} aria-label="reassign to">
+            {others.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <button className="btn small" onClick={() => onDone(target)}>Reassign</button>
+        </div>
+      )}
+      <div className="remove-row">
+        <button className="btn small danger" onClick={() => onDone('')}>Remove {count === 1 ? 'it' : 'them'} too</button>
+        <button className="btn small" onClick={() => onDone()}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Left panel: stimulus types, then the selected object (or the object list),
  * then run settings. Every change re-simulates.
  */
 export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props) {
   const { stimulusTypes, objects } = experiment
   const selected = objects.find((o) => o.id === selectedId) ?? null
+  // stimulus type whose removal is awaiting a decision (it still has objects)
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null)
+
+  const requestRemove = (id: string) => {
+    if (objects.some((o) => o.stimulus === id)) setPendingRemove(id)
+    else dispatch({ type: 'stim/remove', id })
+  }
 
   return (
     <div className="inspector">
@@ -75,10 +111,24 @@ export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props)
             <div className="stim-head">
               <span className="swatch" style={{ background: stimColor(i) }} />
               <input className="name-input" value={s.name} onChange={(e) => dispatch({ type: 'stim/update', id: s.id, patch: { name: e.target.value } })} aria-label="stimulus name" />
-              <button className="icon-btn" title="remove stimulus type" onClick={() => dispatch({ type: 'stim/remove', id: s.id })}>×</button>
+              <button className="icon-btn" title="remove stimulus type" onClick={() => requestRemove(s.id)}>×</button>
             </div>
-            <WeightField label="bottom-up" value={s.bu} hint="salience" onChange={(v) => dispatch({ type: 'stim/update', id: s.id, patch: { bu: v } })} />
-            <WeightField label="top-down" value={s.td} hint="task relevance" onChange={(v) => dispatch({ type: 'stim/update', id: s.id, patch: { td: v } })} />
+            {pendingRemove === s.id ? (
+              <RemovePrompt
+                stim={s}
+                count={objects.filter((o) => o.stimulus === s.id).length}
+                others={stimulusTypes.filter((t) => t.id !== s.id)}
+                onDone={(reassignTo) => {
+                  setPendingRemove(null)
+                  if (reassignTo !== undefined) dispatch({ type: 'stim/remove', id: s.id, reassignTo })
+                }}
+              />
+            ) : (
+              <>
+                <WeightField label="bottom-up" value={s.bu} hint="salience" onChange={(v) => dispatch({ type: 'stim/update', id: s.id, patch: { bu: v } })} />
+                <WeightField label="top-down" value={s.td} hint="task relevance" onChange={(v) => dispatch({ type: 'stim/update', id: s.id, patch: { td: v } })} />
+              </>
+            )}
           </div>
         ))}
       </section>

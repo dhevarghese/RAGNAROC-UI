@@ -10,10 +10,13 @@ export type Action =
   | { type: 'set'; patch: Partial<Pick<Experiment, 'name' | 'runtime' | 'canvas' | 'mask'>> }
   | { type: 'stim/add'; stim?: Partial<StimulusType> }
   | { type: 'stim/update'; id: string; patch: Partial<StimulusType> }
-  | { type: 'stim/remove'; id: string }
+  /** Objects of that type are reassigned to `reassignTo`, or removed if it is absent. */
+  | { type: 'stim/remove'; id: string; reassignTo?: string }
   | { type: 'obj/add'; obj: Partial<VisualObject> & Pick<VisualObject, 'x' | 'y'> }
   | { type: 'obj/update'; id: string; patch: Partial<VisualObject> }
   | { type: 'obj/remove'; id: string }
+  /** Pull every object back inside the current canvas. */
+  | { type: 'obj/clamp' }
 
 let counter = 0
 export const uid = (prefix: string) => `${prefix}${Date.now().toString(36)}${(counter++).toString(36)}`
@@ -43,14 +46,13 @@ export function reducer(state: Experiment, action: Action): Experiment {
       }
     case 'stim/remove': {
       const remaining = state.stimulusTypes.filter((s) => s.id !== action.id)
-      const fallback = remaining[0]?.id
+      const target = remaining.some((s) => s.id === action.reassignTo) ? action.reassignTo : undefined
       return {
         ...state,
         stimulusTypes: remaining,
-        // objects that pointed at the removed type fall back to the first remaining one (or are dropped)
-        objects: state.objects
-          .map((o) => (o.stimulus === action.id ? { ...o, stimulus: fallback ?? '' } : o))
-          .filter((o) => o.stimulus !== ''),
+        objects: target
+          ? state.objects.map((o) => (o.stimulus === action.id ? { ...o, stimulus: target } : o))
+          : state.objects.filter((o) => o.stimulus !== action.id),
       }
     }
     case 'obj/add': {
@@ -65,6 +67,91 @@ export function reducer(state: Experiment, action: Action): Experiment {
       return { ...state, objects: state.objects.map((o) => (o.id === action.id ? { ...o, ...action.patch } : o)) }
     case 'obj/remove':
       return { ...state, objects: state.objects.filter((o) => o.id !== action.id) }
+    case 'obj/clamp': {
+      const c = state.canvas
+      if (!outOfBounds(state).length) return state
+      return {
+        ...state,
+        objects: state.objects.map((o) => ({ ...o, x: Math.min(Math.max(1, o.x), c), y: Math.min(Math.max(1, o.y), c) })),
+      }
+    }
+  }
+}
+
+/** Objects that lie outside the current canvas (e.g. after it was shrunk). */
+export function outOfBounds(exp: Experiment): VisualObject[] {
+  return exp.objects.filter((o) => o.x < 1 || o.y < 1 || o.x > exp.canvas || o.y > exp.canvas)
+}
+
+// ---- undo / redo -----------------------------------------------------------
+
+export interface History {
+  past: Experiment[]
+  present: Experiment
+  future: Experiment[]
+  /** identity of the last edit, so a run of the same edit (dragging, typing) collapses into one undo step */
+  lastKey: string | null
+  lastAt: number
+}
+
+export type HistoryAction = Action | { type: 'undo' } | { type: 'redo' }
+
+const MAX_HISTORY = 100
+const COALESCE_MS = 1000
+
+/** Two edits coalesce when they change the same field of the same thing in quick succession. */
+function editKey(a: Action): string | null {
+  switch (a.type) {
+    case 'set': return `set:${Object.keys(a.patch).sort().join(',')}`
+    case 'stim/update': return `stim:${a.id}:${Object.keys(a.patch).sort().join(',')}`
+    case 'obj/update': return `obj:${a.id}:${Object.keys(a.patch).sort().join(',')}`
+    default: return null
+  }
+}
+
+export function initialHistory(present: Experiment): History {
+  return { past: [], present, future: [], lastKey: null, lastAt: 0 }
+}
+
+/** `now` is passed in (not read inside) to keep the reducer pure. */
+export function historyReducer(h: History, action: HistoryAction & { now?: number }): History {
+  if (action.type === 'undo') {
+    if (!h.past.length) return h
+    return { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future], lastKey: null, lastAt: 0 }
+  }
+  if (action.type === 'redo') {
+    if (!h.future.length) return h
+    return { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1), lastKey: null, lastAt: 0 }
+  }
+  const next = reducer(h.present, action)
+  if (next === h.present) return h
+  const key = editKey(action)
+  const now = action.now ?? 0
+  const coalesce = key !== null && key === h.lastKey && now - h.lastAt < COALESCE_MS
+  const past = coalesce ? h.past : [...h.past, h.present].slice(-MAX_HISTORY)
+  return { past, present: next, future: [], lastKey: key, lastAt: now }
+}
+
+// ---- draft autosave --------------------------------------------------------
+
+const DRAFT_KEY = 'ragnaroc.draft.v1'
+
+export function loadDraft(): Experiment | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const exp = JSON.parse(raw) as Experiment
+    return Array.isArray(exp.stimulusTypes) && Array.isArray(exp.objects) ? exp : null
+  } catch {
+    return null
+  }
+}
+
+export function saveDraft(exp: Experiment) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(exp))
+  } catch {
+    /* quota or private mode: the draft is a convenience, not a requirement */
   }
 }
 
@@ -155,6 +242,7 @@ export function removeFromLibrary(name: string): SavedExperiment[] {
   return lib
 }
 
+/** A shared link wins, then whatever was being edited last time, then the default preset. */
 export function initialExperiment(): Experiment {
-  return experimentFromLocation() ?? structuredClone(DEFAULT_PRESET.experiment)
+  return experimentFromLocation() ?? loadDraft() ?? structuredClone(DEFAULT_PRESET.experiment)
 }

@@ -141,6 +141,12 @@ input, select { font: inherit; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.small { padding: 3px 9px; font-size: 12px; }
+.btn.icon { padding: 0 8px; font-size: 15px; line-height: 1; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn:disabled:hover { border-color: var(--line-2); }
+.btn.danger { color: var(--err); border-color: rgba(255, 107, 139, 0.4); }
+.btn.danger:hover { background: rgba(255, 107, 139, 0.1); }
+.undo-group { display: flex; gap: 2px; }
 .btn.play { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 12px; }
 .icon-btn {
   background: none; border: none; color: var(--text-3); cursor: pointer;
@@ -238,6 +244,25 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .map-glossary dd { margin: 0; color: var(--text-3); font-size: 12.5px; line-height: 1.5; }
 .results-empty { padding: 40px; text-align: center; color: var(--text-2); border: 1px dashed var(--line-2); border-radius: var(--radius); }
 .results-empty ul { text-align: left; display: inline-block; margin: 10px 0 0; color: var(--warn); }
+.problem-list { text-align: left; display: inline-block; margin: 8px 0 12px; padding-left: 18px; color: var(--warn); font-size: 13px; line-height: 1.6; }
+.results-empty .problem-list ~ .btn, .stale-card .btn { display: inline-block; margin: 0 auto; }
+
+/* results shown while the experiment is invalid: keep them visible but clearly not current */
+.results-wrap { position: relative; }
+.results-wrap.stale > .results { opacity: 0.35; filter: saturate(0.4); pointer-events: none; user-select: none; }
+.stale-overlay { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 48px; pointer-events: none; }
+.stale-card {
+  pointer-events: auto; text-align: center; max-width: 520px; padding: 18px 22px;
+  background: var(--panel); border: 1px solid rgba(245, 181, 63, 0.45); border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.stale-card h3 { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+
+/* removing a stimulus type that objects still use */
+.remove-prompt { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.remove-prompt p { font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+.remove-row { display: flex; gap: 6px; align-items: center; }
+.remove-row select { flex: 1; min-width: 0; }
 
 /* Featured 3-D surface + thumbnails */
 .featured { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -277,6 +302,7 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .landing h1 { font-size: 46px; letter-spacing: 0.02em; }
 .landing-tag { font-size: 19px; color: var(--text-2); }
 .landing-lede { color: var(--text-2); max-width: 640px; line-height: 1.65; font-size: 15px; }
+.landing-resume { color: var(--text-3); font-size: 13px; margin-top: 10px; }
 .landing-lede a { color: var(--accent); text-decoration: none; }
 .landing-lede a:hover { text-decoration: underline; }
 .section-lede { color: var(--text-2); line-height: 1.65; font-size: 15px; margin: -8px 0 16px; }

@@ -4,6 +4,8 @@ import { stimColor } from '../state/experiment'
 
 interface Props {
   onOpen: (experiment?: Experiment) => void
+  /** Name of the experiment restored from the last session, if any. */
+  resumeName: string | null
 }
 
 const PAPER_URL = 'https://psycnet.apa.org/record/2020-58898-001'
@@ -19,7 +21,7 @@ const MAPS = [
 ]
 
 /** What this is, how to use it, and a way in. */
-export function Landing({ onOpen }: Props) {
+export function Landing({ onOpen, resumeName }: Props) {
   return (
     <div className="landing">
       <header className="landing-hero">
@@ -33,9 +35,12 @@ export function Landing({ onOpen }: Props) {
           the simulated N2pc EEG component. Everything runs locally; nothing is uploaded.
         </p>
         <div className="landing-cta">
-          <button className="btn primary big" onClick={() => onOpen()}>Open the simulator</button>
+          <button className="btn primary big" onClick={() => onOpen()}>
+            {resumeName ? 'Continue' : 'Open the simulator'}
+          </button>
           <a className="btn big" href="#how">How does it work?</a>
         </div>
+        {resumeName && <p className="landing-resume">Picks up “{resumeName}” where you left off. Or start from a preset below.</p>}
       </header>
 
       <section className="landing-section" id="how">
