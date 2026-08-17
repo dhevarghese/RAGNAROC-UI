@@ -103,7 +103,7 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
           </span>
         ) : (
           <span className="state ok" title={status.elapsedMs != null ? `Last run took ${status.elapsedMs.toFixed(0)} ms` : undefined}>
-            <span className="state-dot" /> Up to date
+            <span className="state-dot" /> Ready
           </span>
         )}
       </div>
