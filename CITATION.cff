@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: >-
+  If you use this simulator, please cite the RAGNAROC model paper (below, under
+  preferred-citation) and, if useful, this repository.
+title: Ragnaroc simulator
+type: software
+authors:
+  - family-names: Varghese
+    given-names: Dheeraj
+repository-code: https://github.com/dhevarghese/RAGNAROC-UI
+url: https://dhevarghese.github.io/RAGNAROC-UI/
+license: MIT
+abstract: >-
+  An interactive, browser-native simulator for the RAGNAROC model of reflexive
+  visual attention. The model runs locally in a Web Worker as a TypeScript port
+  verified against the reference implementation.
+preferred-citation:
+  type: article
+  title: >-
+    Understanding visual attention with RAGNAROC: A reflexive attention gradient
+    through neural AttRactOr competition
+  authors:
+    - family-names: Wyble
+      given-names: Brad
+    - family-names: Callahan-Flintoft
+      given-names: Chloe
+    - family-names: Chen
+      given-names: Hui
+    - family-names: Marinov
+      given-names: Toma
+    - family-names: Sarkar
+      given-names: Aakash
+    - family-names: Bowman
+      given-names: Howard
+  journal: Psychological Review
+  year: 2020
+  volume: 127
+  issue: 6
+  start: 1163
+  end: 1198
+  doi: 10.1037/rev0000245

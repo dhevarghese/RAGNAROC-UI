@@ -55,9 +55,10 @@ input, select { font: inherit; }
 }
 @media (max-width: 980px) {
   .layout { grid-template-columns: 1fr; }
-  .side { border-right: none !important; border-bottom: 1px solid var(--line); }
+  /* a plain block in the flow (not the desktop sticky sidebar), so the page scrolls as one */
+  .layout .side { border-right: none; border-bottom: 1px solid var(--line); position: static; max-height: none; overflow: visible; }
   /* the inspector collapses behind the Setup button in the top bar */
-  .side:not(.open) { display: none; }
+  .layout .side:not(.open) { display: none; }
 }
 @media (min-width: 981px) { .setup-toggle { display: none; } }
 .side {

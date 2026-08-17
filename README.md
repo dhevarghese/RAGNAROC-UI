@@ -64,3 +64,19 @@ To change it and keep the app in sync:
 Fork, branch, change, pull request. UI copy avoids em dashes and bold inside
 prose; the app has no runtime dependencies beyond React, and we would like to
 keep it that way.
+
+## Citing
+
+If you use the simulator in your work, please cite the model paper:
+Wyble, B., Callahan-Flintoft, C., Chen, H., Marinov, T., Sarkar, A., & Bowman, H. (2020).
+Understanding visual attention with RAGNAROC: A reflexive attention gradient through neural
+AttRactOr competition. *Psychological Review, 127*(6), 1163–1198.
+https://doi.org/10.1037/rev0000245
+
+GitHub's "Cite this repository" button (from [`CITATION.cff`](CITATION.cff)) also gives a
+citation for the tool itself.
+
+## Licence
+
+[MIT](LICENSE). The model is the published work of Wyble et al.; this repository covers the
+simulator code and the TypeScript port.
