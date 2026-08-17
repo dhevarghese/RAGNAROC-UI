@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { ACT_MAX, ACT_MIN, rgbAt } from './colormap'
+import { FIXED_RANGE, rgbAt, type Range } from './colormap'
 
 interface Props {
   /** full series, row-major frames */
@@ -15,6 +15,8 @@ interface Props {
   onPick?: (x: number, y: number) => void
   title: string
   subtitle?: string
+  /** colour + height range; defaults to the model's fixed activation bounds */
+  range?: Range
 }
 
 /**
@@ -23,7 +25,9 @@ interface Props {
  * shading, colour from the shared activation colormap. Drag to orbit, click
  * to move the probe. No WebGL, no dependencies, ~2 ms per frame at 27×27.
  */
-export function Surface3D({ data, w, h, step, width, height, probe, markers, onPick, title, subtitle }: Props) {
+export function Surface3D({ data, w, h, step, width, height, probe, markers, onPick, title, subtitle, range = FIXED_RANGE }: Props) {
+  const ACT_MIN = range.min, ACT_MAX = range.max
+  const [hover, setHover] = useState<number>(-1) // cell index under the pointer, -1 when none
   const ref = useRef<HTMLCanvasElement>(null)
   const [azimuth, setAzimuth] = useState(-0.65)
   const [elevation, setElevation] = useState(0.55)
@@ -114,7 +118,7 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
         const gy = ((v01 + v11) - (v00 + v10)) / 2 / zRange * zScale
         const nrm = normalize([-gx, -gy, 1])
         const lambert = Math.max(0, nrm[0] * L[0] + nrm[1] * L[1] + nrm[2] * L[2])
-        const [r, g, b] = rgbAt((v00 + v10 + v11 + v01) / 4)
+        const [r, g, b] = rgbAt((v00 + v10 + v11 + v01) / 4, ACT_MIN, ACT_MAX)
         quads.push({ d, pts: [p00[0], p00[1], p10[0], p10[1], p11[0], p11[1], p01[0], p01[1]], r, g, b, shade: 0.55 + 0.45 * lambert, x, y })
       }
     }
@@ -176,9 +180,21 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
     ctx.textAlign = 'center'
     const [lx, ly] = project(worldX(w / 2), worldY(-1.5), 0); ctx.fillText('x →', lx, ly)
     const [mx, my] = project(worldX(w + 1.8), worldY(h / 2), 0); ctx.fillText('y ↓', mx, my)
-    const [zx, zy] = project(worldX(-1.5), worldY(-1), worldZ(ACT_MAX)); ctx.fillText(`${ACT_MAX}`, zx, zy)
-    const [z0x, z0y] = project(worldX(-1.5), worldY(-1), 0); ctx.fillText(`${ACT_MIN}`, z0x, z0y)
-  }, [data, w, h, step, width, height, azimuth, elevation, probe, markers])
+    const [zx, zy] = project(worldX(-1.5), worldY(-1), worldZ(ACT_MAX)); ctx.fillText(fmt(ACT_MAX), zx, zy)
+    const [z0x, z0y] = project(worldX(-1.5), worldY(-1), 0); ctx.fillText(fmt(ACT_MIN), z0x, z0y)
+  }, [data, w, h, step, width, height, azimuth, elevation, probe, markers, ACT_MIN, ACT_MAX])
+
+  const nearest = (px: number, py: number) => {
+    const c = centersRef.current
+    let best = -1, bd = Infinity
+    for (let i = 0; i < c.length / 2; i++) {
+      const dd = (c[i * 2] - px) ** 2 + (c[i * 2 + 1] - py) ** 2
+      if (dd < bd) { bd = dd; best = i }
+    }
+    return bd < 20 * 20 ? best : -1
+  }
+  const hc = hover >= 0 ? { x: centersRef.current[hover * 2], y: centersRef.current[hover * 2 + 1] } : null
+  const hoverVal = hover >= 0 ? data[step * w * h + hover] : 0
 
   return (
     <figure className="surface3d">
@@ -189,6 +205,7 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
         </div>
         <span className="muted small">drag to orbit, click to move the probe</span>
       </figcaption>
+      <div className="surface-body" style={{ width, height }}>
       <canvas
         ref={ref}
         style={{ width, height, display: 'block', cursor: 'grab', touchAction: 'none' }}
@@ -198,32 +215,43 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
         }}
         onPointerMove={(e) => {
           const d = dragRef.current
-          if (!d) return
+          if (!d) {
+            const r = e.currentTarget.getBoundingClientRect()
+            setHover(nearest(e.clientX - r.left, e.clientY - r.top))
+            return
+          }
           const dx = e.clientX - d.x, dy = e.clientY - d.y
           if (Math.abs(dx) + Math.abs(dy) > 2) d.moved = true
           d.x = e.clientX; d.y = e.clientY
+          setHover(-1)
           setAzimuth((a) => a + dx * 0.008)
           setElevation((el) => Math.min(1.45, Math.max(0.12, el + dy * 0.008)))
         }}
+        onPointerLeave={() => setHover(-1)}
         onPointerUp={(e) => {
           const d = dragRef.current
           dragRef.current = null
           if (!d || d.moved || !onPick) return
           const r = e.currentTarget.getBoundingClientRect()
-          const px = e.clientX - r.left, py = e.clientY - r.top
-          const c = centersRef.current
-          let best = -1, bd = Infinity
-          for (let i = 0; i < c.length / 2; i++) {
-            const dd = (c[i * 2] - px) ** 2 + (c[i * 2 + 1] - py) ** 2
-            if (dd < bd) { bd = dd; best = i }
-          }
-          if (best >= 0 && bd < 20 * 20) onPick((best % w) + 1, Math.floor(best / w) + 1)
+          const best = nearest(e.clientX - r.left, e.clientY - r.top)
+          if (best >= 0) onPick((best % w) + 1, Math.floor(best / w) + 1)
         }}
         aria-label={`${title} 3-D surface`}
       />
+      {hc && (
+        <>
+          <div className="cell-hover ring" style={{ left: hc.x, top: hc.y }} />
+          <div className={`cell-tip${hc.x > width / 2 ? ' left' : ''}`} style={{ left: hc.x, top: hc.y - 10 }}>
+            ({(hover % w) + 1}, {Math.floor(hover / w) + 1}) <b>{hoverVal.toFixed(2)}</b>
+          </div>
+        </>
+      )}
+      </div>
     </figure>
   )
 }
+
+const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
 
 function normalize(v: number[]): number[] {
   const l = Math.hypot(v[0], v[1], v[2]) || 1

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Experiment, SimulationResult } from '../model/types'
 import { stimColor } from '../state/experiment'
-import { ACT_MAX, ACT_MIN, legendGradient } from '../viz/colormap'
+import { ACT_MAX, ACT_MIN, FIXED_RANGE, legendGradient, seriesRange, type Range } from '../viz/colormap'
 import { Heatmap } from '../viz/Heatmap'
 import { Surface3D } from '../viz/Surface3D'
 import { TraceChart, type Trace } from '../viz/TraceChart'
@@ -21,6 +21,11 @@ interface Props {
   selectedObjectId: string | null
 }
 
+const SPEEDS = [0.25, 0.5, 1, 2, 4]
+/** wall-clock ms per simulated ms at 1x (about 8 s for a 600 ms run) */
+const MS_PER_STEP = 8
+const PLAY_KEY = 'ragnaroc.playback'
+
 const MAP_INFO: Record<string, { title: string; blurb: string }> = {
   AM: { title: 'Attention map', blurb: 'Where attention is deployed. Above threshold (14) it amplifies input to the LV maps.' },
   IG: { title: 'Inhibitory gate', blurb: 'Driven by LV and by AM itself; when it crosses 8 it suppresses the attention map.' },
@@ -38,6 +43,10 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   const { w, h, steps } = result
   const n = w * h
   const [playing, setPlaying] = useState(false)
+  const [playback, setPlayback] = useState<{ speed: number; loop: boolean }>(() => {
+    try { return { speed: 1, loop: true, ...JSON.parse(localStorage.getItem(PLAY_KEY) ?? '{}') } } catch { return { speed: 1, loop: true } }
+  })
+  const [autoRange, setAutoRange] = useState(false)
   const [mapSize, setMapSize] = useState(148)
   const [sel, setSel] = useState<MapSel>({ kind: 'AM', stim: 0 })
   const [surfaceW, setSurfaceW] = useState(560)
@@ -65,7 +74,9 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     return () => ro.disconnect()
   }, [experiment.stimulusTypes.length])
 
-  // playback: ~8 simulated ms per real ms of wall clock, wrapping at the end
+  useEffect(() => { localStorage.setItem(PLAY_KEY, JSON.stringify(playback)) }, [playback])
+
+  // playback: advance by wall clock so speed is independent of frame rate
   const stepRef = useRef(step)
   stepRef.current = step
   useEffect(() => {
@@ -74,18 +85,50 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     let last = performance.now()
     let acc = 0
     const tick = (now: number) => {
-      acc += (now - last) / 8
+      acc += ((now - last) / MS_PER_STEP) * playback.speed
       last = now
       const advance = Math.floor(acc)
       if (advance >= 1) {
         acc -= advance
-        setStep((stepRef.current + advance) % steps)
+        const next = stepRef.current + advance
+        if (next >= steps && !playback.loop) {
+          setStep(steps - 1)
+          setPlaying(false)
+          return
+        }
+        setStep(next % steps)
       }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [playing, steps, setStep])
+  }, [playing, steps, setStep, playback])
+
+  const togglePlay = () => {
+    // pressing play at the very end restarts from 0
+    if (!playing && stepRef.current >= steps - 1) setStep(0)
+    setPlaying((p) => !p)
+  }
+
+  // space toggles playback anywhere outside a text field
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'BUTTON') return
+      if (e.key === ' ') { e.preventDefault(); togglePlay() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, steps])
+
+  // per-map colour ranges (whole run), used when "auto" is on
+  const ranges = useMemo(() => ({
+    AM: seriesRange(result.AM.data), IG: seriesRange(result.IG.data),
+    EV: result.EV.map((m) => seriesRange(m.data)), LV: result.LV.map((m) => seriesRange(m.data)), II: result.II.map((m) => seriesRange(m.data)),
+  }), [result])
+  const rangeOf = (kind: MapKind, stim = 0): Range =>
+    !autoRange ? FIXED_RANGE : kind === 'AM' ? ranges.AM : kind === 'IG' ? ranges.IG : ranges[kind][stim] ?? FIXED_RANGE
 
   const clampedStep = Math.min(step, steps - 1)
   const px = Math.min(probe.x, w), py = Math.min(probe.y, h)
@@ -118,10 +161,13 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     return Math.ceil(m * 1.1)
   }, [result, steps])
 
-  const bands = experiment.objects.map((o) => {
-    const i = Math.max(0, experiment.stimulusTypes.findIndex((s) => s.id === o.stimulus))
-    return { start: o.latency + T1_ONSET, end: o.latency + T1_ONSET + o.duration, color: stimColor(i) + '22' }
-  })
+  const bands = [
+    { start: 0, end: Math.min(steps, T1_ONSET + 1), color: 'rgba(255,255,255,0.045)', label: 'settling' },
+    ...experiment.objects.map((o) => {
+      const i = Math.max(0, experiment.stimulusTypes.findIndex((s) => s.id === o.stimulus))
+      return { start: o.latency + T1_ONSET, end: o.latency + T1_ONSET + o.duration, color: stimColor(i) + '22' }
+    }),
+  ]
 
   const markers = experiment.objects.map((o) => {
     const i = Math.max(0, experiment.stimulusTypes.findIndex((s) => s.id === o.stimulus))
@@ -144,17 +190,27 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     pick(x, y)
   }
   const surfaceMarkers = experiment.objects.map((o, i) => ({ ...markers[i], label: o.name }))
+  const selRange = rangeOf(sel.kind, selStim)
 
   return (
     <div className="results">
       <div className="timeline">
         <div className="timeline-head">
-          <button className="btn play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'pause' : 'play'}>
-            {playing ? '❚❚' : '▶'}
-          </button>
+          <div className="transport">
+            <button className="btn icon" onClick={() => { setPlaying(false); setStep(0) }} title="Start" aria-label="go to start">⏮</button>
+            <button className="btn icon" onClick={() => { setPlaying(false); setStep(clampedStep - 1) }} title="Back 1 ms (←)" aria-label="step back">‹</button>
+            <button className="btn play" onClick={togglePlay} title="Play / pause (space)" aria-label={playing ? 'pause' : 'play'}>
+              {playing ? '❚❚' : '▶'}
+            </button>
+            <button className="btn icon" onClick={() => { setPlaying(false); setStep(clampedStep + 1) }} title="Forward 1 ms (→)" aria-label="step forward">›</button>
+            <select className="chip-select" value={playback.speed} onChange={(e) => setPlayback((p) => ({ ...p, speed: Number(e.target.value) }))} aria-label="playback speed" title="Playback speed">
+              {SPEEDS.map((sp) => <option key={sp} value={sp}>{sp}x</option>)}
+            </select>
+            <button className={`chip${playback.loop ? ' active' : ''}`} onClick={() => setPlayback((p) => ({ ...p, loop: !p.loop }))} title="Loop at the end" aria-pressed={playback.loop}>loop</button>
+          </div>
           <div className="timeline-readout">
             <span className="time-now">{clampedStep}<small> ms</small></span>
-            <span className="muted small">drag the trace or the schedule to scrub. Objects can appear from {T1_ONSET + 1} ms</span>
+            <span className="muted small">drag the trace or the schedule to scrub, space to play, arrow keys to step. Objects can appear from {T1_ONSET + 1} ms</span>
           </div>
           <span className="muted small">simulated in {result.elapsedMs.toFixed(0)} ms</span>
         </div>
@@ -190,10 +246,21 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             data={selData} w={w} h={h} step={clampedStep}
             width={surfaceW} height={Math.round(surfaceW * 0.62)}
             probe={{ x: px, y: py }} markers={surfaceMarkers} onPick={pick}
+            range={selRange}
           />
           <div className="legend legend-inline">
             <div className="legend-bar" style={{ background: legendGradient() }} />
-            <div className="legend-ticks"><span>{ACT_MIN}</span><span>activation (height and colour)</span><span>{ACT_MAX}</span></div>
+            <div className="legend-ticks">
+              <span>{fmtRange(selRange.min)}</span>
+              <span className="legend-mid">
+                activation (height and colour)
+                <span className="range-toggle" role="group" aria-label="colour range">
+                  <button className={`chip${!autoRange ? ' active' : ''}`} onClick={() => setAutoRange(false)} title={`Same scale for every map: ${ACT_MIN} to ${ACT_MAX}`}>fixed</button>
+                  <button className={`chip${autoRange ? ' active' : ''}`} onClick={() => setAutoRange(true)} title="Each map stretched to its own min and max over the whole run">auto</button>
+                </span>
+              </span>
+              <span>{fmtRange(selRange.max)}</span>
+            </div>
           </div>
         </div>
 
@@ -203,17 +270,17 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             <span className="help">click a map to feature it in 3-D and move the probe</span>
           </div>
           <div className="maps-row">
-            <div className={`thumb${isSel('AM') ? ' active' : ''}`}><Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('AM')} /></div>
-            <div className={`thumb${isSel('IG') ? ' active' : ''}`}><Heatmap title={MAP_INFO.IG.title} subtitle={`${probeVal(result.IG.data).toFixed(1)} at probe`} data={result.IG.data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('IG')} /></div>
+            <div className={`thumb${isSel('AM') ? ' active' : ''}`}><Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} range={rangeOf('AM')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('AM')} /></div>
+            <div className={`thumb${isSel('IG') ? ' active' : ''}`}><Heatmap title={MAP_INFO.IG.title} subtitle={`${probeVal(result.IG.data).toFixed(1)} at probe`} data={result.IG.data} range={rangeOf('IG')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('IG')} /></div>
           </div>
           {experiment.stimulusTypes.map((s, i) => (
             <div className="maps-row" key={s.id}>
               <div className="maps-row-label" style={{ color: stimColor(i) }}>
                 <span className="swatch" style={{ background: stimColor(i) }} />{s.name}
               </div>
-              <div className={`thumb${isSel('EV', i) ? ' active' : ''}`}><Heatmap title="Early visual" data={result.EV[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('EV', i)} /></div>
-              <div className={`thumb${isSel('LV', i) ? ' active' : ''}`}><Heatmap title="Late visual" data={result.LV[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('LV', i)} /></div>
-              <div className={`thumb${isSel('II', i) ? ' active' : ''}`}><Heatmap title="Inhib. interneurons" data={result.II[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('II', i)} /></div>
+              <div className={`thumb${isSel('EV', i) ? ' active' : ''}`}><Heatmap title="Early visual" data={result.EV[i].data} range={rangeOf('EV', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('EV', i)} /></div>
+              <div className={`thumb${isSel('LV', i) ? ' active' : ''}`}><Heatmap title="Late visual" data={result.LV[i].data} range={rangeOf('LV', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('LV', i)} /></div>
+              <div className={`thumb${isSel('II', i) ? ' active' : ''}`}><Heatmap title="Inhib. interneurons" data={result.II[i].data} range={rangeOf('II', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('II', i)} /></div>
             </div>
           ))}
         </div>
@@ -242,3 +309,5 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     </div>
   )
 }
+
+const fmtRange = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))

@@ -53,6 +53,22 @@ export function cssAt(v: number, min = ACT_MIN, max = ACT_MAX): string {
   return `rgb(${r},${g},${b})`
 }
 
+export interface Range { min: number; max: number }
+export const FIXED_RANGE: Range = { min: ACT_MIN, max: ACT_MAX }
+
+/** Min/max over a whole map series, widened a little so the extremes still read as colour. */
+export function seriesRange(data: Float32Array): Range {
+  let lo = Infinity, hi = -Infinity
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i]
+    if (v < lo) lo = v
+    if (v > hi) hi = v
+  }
+  if (!Number.isFinite(lo)) return FIXED_RANGE
+  if (hi - lo < 1e-3) { lo -= 0.5; hi += 0.5 }
+  return { min: lo, max: hi }
+}
+
 /** CSS gradient string for a legend bar. */
 export function legendGradient(): string {
   return `linear-gradient(to right, ${STOPS.map(([t, r, g, b]) => `rgb(${r},${g},${b}) ${(t * 100).toFixed(0)}%`).join(', ')})`

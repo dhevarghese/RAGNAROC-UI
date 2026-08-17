@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { paintFrame } from './colormap'
+import { FIXED_RANGE, paintFrame, type Range } from './colormap'
 
 interface Props {
   /** full series, row-major frames */
@@ -16,14 +16,17 @@ interface Props {
   onPick?: (x: number, y: number) => void
   title: string
   subtitle?: string
+  /** colour range; defaults to the model's fixed activation bounds */
+  range?: Range
 }
 
 /**
  * One activation map at one time step, drawn pixel-per-cell into an offscreen
  * ImageData and scaled up with crisp edges. Click to move the probe.
  */
-export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title, subtitle }: Props) {
+export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title, subtitle, range = FIXED_RANGE }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
   const imgRef = useRef<ImageData | null>(null)
   const offRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -45,7 +48,7 @@ export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title,
     }
     const img = imgRef.current
     const n = w * h
-    paintFrame(img, data, step * n, n)
+    paintFrame(img, data, step * n, n, range.min, range.max)
     off.getContext('2d')!.putImageData(img, 0, 0)
 
     ctx.imageSmoothingEnabled = false
@@ -78,7 +81,16 @@ export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title,
       ctx.lineWidth = 0.5
       ctx.strokeRect(px + 2, py + 2, cell - 4, cell - 4)
     }
-  }, [data, w, h, step, size, probe, markers])
+  }, [data, w, h, step, size, probe, markers, range])
+
+  const cell = size / w
+  const cellAt = (e: React.PointerEvent | React.MouseEvent) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    return {
+      x: Math.min(w, Math.max(1, Math.floor(((e.clientX - r.left) / r.width) * w) + 1)),
+      y: Math.min(h, Math.max(1, Math.floor(((e.clientY - r.top) / r.height) * h) + 1)),
+    }
+  }
 
   return (
     <figure className="heatmap">
@@ -86,18 +98,25 @@ export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title,
         <span className="heatmap-title">{title}</span>
         {subtitle && <span className="heatmap-sub">{subtitle}</span>}
       </figcaption>
-      <canvas
-        ref={ref}
-        style={{ width: size, height: size, cursor: onPick ? 'crosshair' : 'default' }}
-        onClick={(e) => {
-          if (!onPick) return
-          const r = e.currentTarget.getBoundingClientRect()
-          const x = Math.min(w, Math.max(1, Math.floor(((e.clientX - r.left) / r.width) * w) + 1))
-          const y = Math.min(h, Math.max(1, Math.floor(((e.clientY - r.top) / r.height) * h) + 1))
-          onPick(x, y)
-        }}
-        aria-label={`${title} activation map`}
-      />
+      <div className="heatmap-body" style={{ width: size, height: size }}>
+        <canvas
+          ref={ref}
+          style={{ width: size, height: size, cursor: onPick ? 'crosshair' : 'default' }}
+          onClick={(e) => { if (onPick) { const c = cellAt(e); onPick(c.x, c.y) } }}
+          onPointerMove={(e) => setHover(cellAt(e))}
+          onPointerLeave={() => setHover(null)}
+          aria-label={`${title} activation map`}
+        />
+        {hover && (
+          <>
+            <div className="cell-hover" style={{ left: (hover.x - 1) * cell, top: (hover.y - 1) * cell, width: cell, height: cell }} />
+            <div className={`cell-tip${hover.y <= h / 2 ? ' below' : ''}${hover.x > w / 2 ? ' left' : ''}`}
+              style={{ left: (hover.x - 0.5) * cell, top: hover.y <= h / 2 ? hover.y * cell : (hover.y - 1) * cell }}>
+              ({hover.x}, {hover.y}) <b>{data[step * w * h + (hover.y - 1) * w + (hover.x - 1)].toFixed(2)}</b>
+            </div>
+          </>
+        )}
+      </div>
     </figure>
   )
 }

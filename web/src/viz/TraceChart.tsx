@@ -22,7 +22,7 @@ interface Props {
   yLabel?: string
   onScrub?: (step: number) => void
   /** shade the intervals [start, end) as "object visible" bands */
-  bands?: { start: number; end: number; color: string }[]
+  bands?: { start: number; end: number; color: string; label?: string }[]
 }
 
 /**
@@ -59,6 +59,12 @@ export function TraceChart({ traces, step, steps, yMin, yMax, height, zeroLine, 
         for (const b of bands) {
           ctx.fillStyle = b.color
           ctx.fillRect(xAt(b.start), padT, Math.max(1, xAt(b.end) - xAt(b.start)), ih)
+          if (b.label) {
+            ctx.fillStyle = 'rgba(255,255,255,0.35)'
+            ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace'
+            ctx.textAlign = 'left'
+            ctx.fillText(b.label, xAt(b.start) + 4, padT + 11)
+          }
         }
       }
       // frame + zero line
