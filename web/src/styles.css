@@ -301,6 +301,6 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .map-card dt { font-weight: 600; margin-bottom: 4px; }
 .map-card dd { margin: 0; color: var(--text-3); font-size: 13px; line-height: 1.5; }
 .about p { color: var(--text-2); line-height: 1.65; margin-bottom: 10px; }
-.landing-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.landing-links { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
 .landing-links a { color: var(--accent); text-decoration: none; }
 .landing-links a:hover { text-decoration: underline; }

@@ -46,7 +46,7 @@ export function Landing({ onOpen }: Props) {
             <div>
               <h3>Define stimulus types</h3>
               <p>A stimulus type is a kind of thing that can appear, such as a target or a distractor. Give
-                each a <b>bottom-up</b> weight (how physically salient it is) and a <b>top-down</b> weight
+                each a bottom-up weight (how physically salient it is) and a top-down weight
                 (how relevant it is to the task), both from 0 to 1.</p>
             </div>
           </li>
@@ -55,7 +55,7 @@ export function Landing({ onOpen }: Props) {
             <div>
               <h3>Place objects on the field</h3>
               <p>Click the visual field to place an object; drag to move it. Each object is one appearance of
-                a stimulus type: it shows up after a <b>latency</b> and stays for a <b>duration</b>. The
+                a stimulus type: it shows up after a latency and stays for a duration. The
                 schedule beside the field shows exactly when everything is on screen.</p>
             </div>
           </li>
@@ -72,8 +72,8 @@ export function Landing({ onOpen }: Props) {
             <div>
               <h3>Read the results</h3>
               <p>Scrub time on the N2pc trace or press play. The 3-D surface shows one brain map at that
-                instant; the small maps show all of them. Click anywhere to move the <b>probe</b> and see that
-                location's full time course. <b>Share link</b> puts the whole experiment in the URL.</p>
+                instant; the small maps show all of them. Click anywhere to move the probe and see that
+                location's full time course. Share link puts the whole experiment in the URL.</p>
             </div>
           </li>
         </ol>
@@ -115,7 +115,6 @@ export function Landing({ onOpen }: Props) {
           <a href={PAPER_URL} target="_blank" rel="noreferrer">Psychological Review</a>
           <a href="https://github.com/dhevarghese/RAGNAROC-UI" target="_blank" rel="noreferrer">Source on GitHub</a>
         </p>
-        <p className="muted small">The simulator is a TypeScript port of the reference Cython model, verified against it to floating-point precision on every build.</p>
       </section>
     </div>
   )
