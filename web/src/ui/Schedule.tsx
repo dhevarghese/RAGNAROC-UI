@@ -45,13 +45,13 @@ export function Schedule({ experiment, step, selectedId, onSelect, onScrub }: Pr
                 onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); scrub(e) }}
                 onPointerMove={(e) => { if (e.buttons & 1) scrub(e) }}
               >
-                <div className="schedule-bar" style={{ left: pct(start), width: pct(end - start), background: color }} title={`${o.name}: ${start}–${end} ms`} />
+                <div className="schedule-bar" style={{ left: pct(start), width: pct(end - start), background: color }} title={`${o.name}: ${start} to ${end} ms`} />
                 <div className="schedule-cursor" style={{ left: pct(step) }} />
               </div>
             </div>
           )
         })}
-        {objects.length === 0 && <div className="schedule-empty muted">No objects yet — click the field to place one.</div>}
+        {objects.length === 0 && <div className="schedule-empty muted">No objects yet. Click the field to place one.</div>}
       </div>
       <div className="schedule-axis">
         <span>0</span>

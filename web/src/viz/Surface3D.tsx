@@ -185,9 +185,9 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
       <figcaption>
         <div>
           <span className="heatmap-title">{title}</span>
-          {subtitle && <span className="heatmap-sub"> · {subtitle}</span>}
+          {subtitle && <span className="heatmap-sub">, {subtitle}</span>}
         </div>
-        <span className="muted small">drag to orbit · click to move probe</span>
+        <span className="muted small">drag to orbit, click to move the probe</span>
       </figcaption>
       <canvas
         ref={ref}

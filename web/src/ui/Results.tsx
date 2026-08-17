@@ -104,9 +104,9 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
       { label: 'IG', color: '#5ec4ff', values: seriesAt(result.IG.data) },
     ]
     const perStim: Trace[][] = experiment.stimulusTypes.map((s, i) => [
-      { label: `EV · ${s.name}`, color: stimColor(i), values: seriesAt(result.EV[i].data), dashed: true },
-      { label: `LV · ${s.name}`, color: stimColor(i), values: seriesAt(result.LV[i].data) },
-      { label: `II · ${s.name}`, color: 'rgba(255,255,255,0.5)', values: seriesAt(result.II[i].data), dashed: true },
+      { label: `EV ${s.name}`, color: stimColor(i), values: seriesAt(result.EV[i].data), dashed: true },
+      { label: `LV ${s.name}`, color: stimColor(i), values: seriesAt(result.LV[i].data) },
+      { label: `II ${s.name}`, color: 'rgba(255,255,255,0.5)', values: seriesAt(result.II[i].data), dashed: true },
     ])
     return { shared, perStim }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,7 +137,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   const selData = sel.kind === 'AM' ? result.AM.data
     : sel.kind === 'IG' ? result.IG.data
     : (sel.kind === 'EV' ? result.EV : sel.kind === 'LV' ? result.LV : result.II)[selStim].data
-  const selTitle = MAP_INFO[sel.kind].title + (sel.kind === 'AM' || sel.kind === 'IG' ? '' : ` · ${stimNames[selStim] ?? ''}`)
+  const selTitle = MAP_INFO[sel.kind].title + (sel.kind === 'AM' || sel.kind === 'IG' ? '' : `: ${stimNames[selStim] ?? ''}`)
   const isSel = (kind: MapKind, stim = 0) => sel.kind === kind && (kind === 'AM' || kind === 'IG' || selStim === stim)
   const pickAndSelect = (kind: MapKind, stim = 0) => (x: number, y: number) => {
     setSel({ kind, stim })
@@ -154,7 +154,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
           </button>
           <div className="timeline-readout">
             <span className="time-now">{clampedStep}<small> ms</small></span>
-            <span className="muted small">drag the trace or the schedule to scrub · objects can appear from {T1_ONSET + 1} ms</span>
+            <span className="muted small">drag the trace or the schedule to scrub. Objects can appear from {T1_ONSET + 1} ms</span>
           </div>
           <span className="muted small">simulated in {result.elapsedMs.toFixed(0)} ms</span>
         </div>
@@ -224,7 +224,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
           <h3>Time course at probe <span className="mono">({px}, {py})</span></h3>
           <span className="muted small">bands = when objects are on screen</span>
         </header>
-        <TraceChart traces={traces.shared} step={clampedStep} steps={steps} yMin={ACT_MIN} yMax={ACT_MAX} height={120} zeroLine yLabel="AM · IG" onScrub={(s) => { setPlaying(false); setStep(s) }} bands={bands} />
+        <TraceChart traces={traces.shared} step={clampedStep} steps={steps} yMin={ACT_MIN} yMax={ACT_MAX} height={120} zeroLine yLabel="AM, IG" onScrub={(s) => { setPlaying(false); setStep(s) }} bands={bands} />
         {traces.perStim.map((tr, i) => (
           <TraceChart key={i} traces={tr} step={clampedStep} steps={steps} yMin={ACT_MIN} yMax={ACT_MAX} height={110} zeroLine yLabel={stimNames[i]} onScrub={(s) => { setPlaying(false); setStep(s) }} bands={bands} />
         ))}

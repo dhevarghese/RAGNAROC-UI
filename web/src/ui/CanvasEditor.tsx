@@ -130,7 +130,7 @@ export function CanvasEditor({ experiment, dispatch, selectedId, onSelect, step,
         <span>
           {hover ? `x ${hover.x}, y ${hover.y}` : `${canvas} × ${canvas} cells`}
         </span>
-        <span className="muted">click empty cell to add · drag to move</span>
+        <span className="muted">click an empty cell to add, drag to move</span>
       </div>
     </div>
   )

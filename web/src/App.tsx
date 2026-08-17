@@ -148,7 +148,7 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
               <h3>Stimulus schedule</h3>
               <Schedule experiment={experiment} step={clampedStep} selectedId={selectedId} onSelect={setSelectedId} onScrub={setStep} />
               <p className="help">
-                Objects can't appear before <b>100 ms</b> — the model needs that long to settle. Latency is measured from there.
+                Objects can't appear before <b>100 ms</b>, which the model needs to settle. Latency is measured from there.
               </p>
             </div>
           </div>

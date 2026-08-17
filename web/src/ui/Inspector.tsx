@@ -104,7 +104,7 @@ export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props)
           <h2>Stimulus types</h2>
           <button className="btn small" onClick={() => dispatch({ type: 'stim/add' })}>+ add</button>
         </header>
-        <p className="help">What can appear. <b>Bottom-up</b> is how physically salient it is; <b>top-down</b> is how relevant it is to the task. Both 0–1.</p>
+        <p className="help">What can appear. <b>Bottom-up</b> is how physically salient it is; <b>top-down</b> is how relevant it is to the task. Both from 0 to 1.</p>
         {stimulusTypes.length === 0 && <p className="muted">Add at least one stimulus type.</p>}
         {stimulusTypes.map((s, i) => (
           <div className="stim-card" key={s.id} style={{ borderColor: stimColor(i) }}>
@@ -146,7 +146,7 @@ export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props)
               <li key={o.id} className={o.id === selectedId ? 'selected' : ''} onClick={() => onSelect(o.id)}>
                 <span className="swatch" style={{ background: stimColor(i) }} />
                 <span className="obj-name">{o.name}</span>
-                <span className="muted small">({o.x}, {o.y}) · {o.latency}→{o.latency + o.duration} ms</span>
+                <span className="muted small">({o.x}, {o.y}), {o.latency} to {o.latency + o.duration} ms</span>
               </li>
             )
           })}

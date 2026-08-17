@@ -45,7 +45,7 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
     history.replaceState(null, '', url)
     try {
       await navigator.clipboard.writeText(url)
-      setToast('Link copied — it contains the whole experiment.')
+      setToast('Link copied. It contains the whole experiment.')
     } catch {
       setToast('Link is in the address bar.')
     }
@@ -114,7 +114,7 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
                 <li key={s.experiment.name} className="menu-row">
                   <button onClick={() => { dispatch({ type: 'replace', experiment: s.experiment }); setMenu(null) }}>
                     <b>{s.experiment.name}</b>
-                    <span>{new Date(s.savedAt).toLocaleString()} · {s.experiment.objects.length} objects</span>
+                    <span>{new Date(s.savedAt).toLocaleString()}, {s.experiment.objects.length} objects</span>
                   </button>
                   <button className="icon-btn" title="delete" onClick={() => setLibrary(removeFromLibrary(s.experiment.name))}>×</button>
                 </li>
