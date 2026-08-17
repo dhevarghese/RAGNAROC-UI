@@ -276,7 +276,7 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .map-glossary dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 24px; margin: 12px 0 4px; }
 .map-glossary dt { font-weight: 600; margin-bottom: 2px; }
 .map-glossary dd { margin: 0; color: var(--text-3); font-size: 12.5px; line-height: 1.5; }
-.map-glossary > p { color: var(--text-3); font-size: 12.5px; line-height: 1.5; margin: 10px 0 0; max-width: 720px; }
+.map-glossary > p { color: var(--text-3); font-size: 12.5px; line-height: 1.5; margin: 10px 0 0; }
 .results-empty { padding: 40px; text-align: center; color: var(--text-2); border: 1px dashed var(--line-2); border-radius: var(--radius); }
 .results-empty ul { text-align: left; display: inline-block; margin: 10px 0 0; color: var(--warn); }
 .problem-list { text-align: left; display: inline-block; margin: 8px 0 12px; padding-left: 18px; color: var(--warn); font-size: 13px; line-height: 1.6; }

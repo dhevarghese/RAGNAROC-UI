@@ -21,6 +21,7 @@ export function Guide({ open, onClose, onLanding }: Props) {
             <h3>Build</h3>
             <ul>
               <li><b>Stimulus types</b> (left panel) are kinds of things, such as a target or a distractor. <b>Bottom-up</b> = salience, <b>top-down</b> = task relevance.</li>
+              <li><b>Objects</b> are appearances of a type: one place, one time window. The model keeps a separate input map per type, so every object of a type is drawn into that type's map and the types compete through the shared attention map.</li>
               <li><b>Click the field</b> to place an object; <b>drag</b> to move; <b>Delete</b> removes the selected one. Each object appears after its <b>latency</b> and stays for its <b>duration</b>.</li>
               <li>The <b>schedule</b> shows when each object is on screen. Nothing can appear before 100 ms, which the model needs to settle.</li>
               <li><b>Simulation</b> settings: runtime (ms), canvas size, mask (neighbourhood radius).</li>

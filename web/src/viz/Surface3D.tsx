@@ -56,9 +56,16 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, pin
     const ce = Math.cos(elevation), se = Math.sin(elevation)
     // fit: the rotated footprint's half-extent is at most (w+h)/2 * ~0.71 → use diagonal
     const diag = Math.hypot(w, h)
-    const scale = Math.min(width / (diag * 1.15), height / (diag * 0.75 * se + zScale * ce + diag * 0.25))
     const cx = width / 2
     const cy = height * 0.56
+    // fit: footprint half-extent (diag/2, foreshortened by se) plus the full activation height
+    // above the centre, with a margin for marker labels; and the footprint below the centre
+    const margin = 18
+    const scale = Math.min(
+      width / (diag * 1.15),
+      (cy - margin) / ((diag / 2) * se + zScale * ce),
+      (height - cy - margin) / ((diag / 2) * se + 1e-6),
+    )
 
     // project world (X right, Y away, Z up) → screen; also return depth (larger = farther)
     const project = (X: number, Y: number, Z: number): [number, number, number] => {

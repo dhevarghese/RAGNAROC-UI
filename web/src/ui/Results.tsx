@@ -61,7 +61,13 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   useEffect(() => {
     const el = surfRef.current
     if (!el) return
-    const ro = new ResizeObserver(() => setSurfaceW(Math.max(320, el.clientWidth)))
+    const measure = () => {
+      const cs = getComputedStyle(el)
+      const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      setSurfaceW(Math.max(320, Math.floor(inner) - 2)) // 2: the canvas border
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
   }, [])

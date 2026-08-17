@@ -23,8 +23,17 @@ export interface SimulationState {
 /** Long enough that typing "600" digit by digit doesn't run three simulations. */
 const DEBOUNCE_MS = 350
 
+/** Everything the model reads, and nothing it doesn't: renaming things must not re-simulate. */
+export function simulationKey(exp: Experiment): string {
+  return JSON.stringify([
+    exp.runtime, exp.canvas, exp.mask,
+    exp.stimulusTypes.map((s) => [s.id, s.td, s.bu]),
+    exp.objects.map((o) => [o.x, o.y, o.latency, o.duration, o.stimulus]),
+  ])
+}
+
 export function useSimulation(experiment: Experiment): SimulationState {
-  const [result, setResult] = useState<{ result: SimulationResult; experiment: Experiment } | null>(null)
+  const [result, setResult] = useState<{ result: SimulationResult; experiment: Experiment; key: string } | null>(null)
   const pendingRef = useRef<Map<number, Experiment>>(new Map())
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +41,9 @@ export function useSimulation(experiment: Experiment): SimulationState {
   const idRef = useRef(0)
 
   const problems = useMemo(() => validate(experiment), [experiment])
+  const simKey = useMemo(() => simulationKey(experiment), [experiment])
+  const expRef = useRef(experiment)
+  expRef.current = experiment
 
   useEffect(() => {
     const worker = new Worker(new URL('../model/worker.ts', import.meta.url), { type: 'module' })
@@ -43,7 +55,7 @@ export function useSimulation(experiment: Experiment): SimulationState {
       if (msg.id !== idRef.current) return
       if (msg.type === 'progress') setProgress(msg.fraction)
       else if (msg.type === 'result') {
-        if (forExp) setResult({ result: msg.result, experiment: forExp })
+        if (forExp) setResult({ result: msg.result, experiment: forExp, key: simulationKey(forExp) })
         setProgress(null)
         setError(null)
       } else if (msg.type === 'error') {
@@ -57,24 +69,28 @@ export function useSimulation(experiment: Experiment): SimulationState {
     }
   }, [])
 
+  const problemsKey = problems.join('\n')
   useEffect(() => {
-    if (problems.length > 0) {
+    if (problemsKey) {
       setProgress(null)
       return
     }
     const id = ++idRef.current
     const t = setTimeout(() => {
       setProgress(0)
+      const experiment = expRef.current
       const req: WorkerRequest = { type: 'run', id, experiment }
       pendingRef.current.set(id, experiment)
       workerRef.current?.postMessage(req)
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [experiment, problems])
+    // keyed on simKey / problem text, not the experiment object: renames don't re-run
+  }, [simKey, problemsKey])
 
   return {
     result: result?.result ?? null,
-    resultExperiment: result?.experiment ?? null,
+    // if only names differ from what was simulated, show the current names with the existing result
+    resultExperiment: result ? (result.key === simKey ? experiment : result.experiment) : null,
     progress, running: progress !== null, problems, error,
   }
 }
