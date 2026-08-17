@@ -10,6 +10,9 @@ import type { WorkerRequest, WorkerResponse } from '../model/worker'
 
 export interface SimulationState {
   result: SimulationResult | null
+  /** The experiment `result` was computed from. Render results against this, not the live one,
+   *  which may already have a different canvas or stimulus count. */
+  resultExperiment: Experiment | null
   /** 0..1 while running, null when idle */
   progress: number | null
   running: boolean
@@ -21,7 +24,8 @@ export interface SimulationState {
 const DEBOUNCE_MS = 350
 
 export function useSimulation(experiment: Experiment): SimulationState {
-  const [result, setResult] = useState<SimulationResult | null>(null)
+  const [result, setResult] = useState<{ result: SimulationResult; experiment: Experiment } | null>(null)
+  const pendingRef = useRef<Map<number, Experiment>>(new Map())
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const workerRef = useRef<Worker | null>(null)
@@ -34,10 +38,12 @@ export function useSimulation(experiment: Experiment): SimulationState {
     workerRef.current = worker
     worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
       const msg = ev.data
+      const forExp = pendingRef.current.get(msg.id)
+      if (msg.type !== 'progress') pendingRef.current.delete(msg.id)
       if (msg.id !== idRef.current) return
       if (msg.type === 'progress') setProgress(msg.fraction)
       else if (msg.type === 'result') {
-        setResult(msg.result)
+        if (forExp) setResult({ result: msg.result, experiment: forExp })
         setProgress(null)
         setError(null)
       } else if (msg.type === 'error') {
@@ -60,10 +66,15 @@ export function useSimulation(experiment: Experiment): SimulationState {
     const t = setTimeout(() => {
       setProgress(0)
       const req: WorkerRequest = { type: 'run', id, experiment }
+      pendingRef.current.set(id, experiment)
       workerRef.current?.postMessage(req)
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [experiment, problems])
 
-  return { result, progress, running: progress !== null, problems, error }
+  return {
+    result: result?.result ?? null,
+    resultExperiment: result?.experiment ?? null,
+    progress, running: progress !== null, problems, error,
+  }
 }

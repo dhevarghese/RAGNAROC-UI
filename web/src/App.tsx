@@ -152,14 +152,14 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
               </p>
             </div>
           </div>
-          {sim.result ? (
+          {sim.result && sim.resultExperiment ? (
             <div className={`results-wrap${invalid ? ' stale' : ''}`}>
               <Results
-                experiment={experiment}
+                experiment={sim.resultExperiment}
                 result={sim.result}
-                step={clampedStep}
+                step={Math.min(clampedStep, sim.result.steps - 1)}
                 setStep={setStep}
-                probe={probe}
+                probe={{ x: Math.min(probe.x, sim.result.w), y: Math.min(probe.y, sim.result.h) }}
                 setProbe={setProbe}
                 selectedObjectId={selectedId}
               />
