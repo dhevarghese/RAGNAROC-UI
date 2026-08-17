@@ -20,7 +20,7 @@ interface Props {
 }
 
 /**
- * A 3-D surface of one activation map at one time step, rendered on a plain
+ * A 3D surface of one activation map at one time step, rendered on a plain
  * 2-D canvas: orthographic camera, painter's-algorithm depth sort, Lambert
  * shading, colour from the shared activation colormap. Drag to orbit, click
  * to move the probe. No WebGL, no dependencies, ~2 ms per frame at 27×27.
@@ -236,7 +236,7 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
           const best = nearest(e.clientX - r.left, e.clientY - r.top)
           if (best >= 0) onPick((best % w) + 1, Math.floor(best / w) + 1)
         }}
-        aria-label={`${title} 3-D surface`}
+        aria-label={`${title} 3D surface`}
       />
       {hc && (
         <>

@@ -224,7 +224,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
       <div className="featured">
         <div className="featured-surface" ref={surfRef}>
           <div className="featured-head">
-            <div className="map-picker" role="tablist" aria-label="map shown in 3-D">
+            <div className="map-picker" role="tablist" aria-label="map shown in 3D">
               {(['AM', 'IG'] as MapKind[]).map((k) => (
                 <button key={k} role="tab" aria-selected={isSel(k)} className={`chip${isSel(k) ? ' active' : ''}`} onClick={() => setSel({ kind: k, stim: 0 })}>{k}</button>
               ))}
@@ -253,7 +253,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             <div className="legend-ticks">
               <span>{fmtRange(selRange.min)}</span>
               <span className="legend-mid">
-                activation (height and colour)
+                <span title="Fixed: same scale on every map (comparable). Auto: each map stretched to its own min and max over the run (readable).">activation (height and colour), scale:</span>
                 <span className="range-toggle" role="group" aria-label="colour range">
                   <button className={`chip${!autoRange ? ' active' : ''}`} onClick={() => setAutoRange(false)} title={`Same scale for every map: ${ACT_MIN} to ${ACT_MAX}`}>fixed</button>
                   <button className={`chip${autoRange ? ' active' : ''}`} onClick={() => setAutoRange(true)} title="Each map stretched to its own min and max over the whole run">auto</button>
@@ -267,7 +267,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
         <div className="maps" ref={gridRef}>
           <div className="maps-head">
             <h3>All maps at {clampedStep} ms</h3>
-            <span className="help">click a map to feature it in 3-D and move the probe</span>
+            <span className="help">click a map to feature it in 3D and move the probe</span>
           </div>
           <div className="maps-row">
             <div className={`thumb${isSel('AM') ? ' active' : ''}`}><Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} range={rangeOf('AM')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('AM')} /></div>
@@ -304,6 +304,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             <div key={k}><dt>{v.title} <span className="mono muted">{k}</span></dt><dd>{v.blurb}</dd></div>
           ))}
           <div><dt>N2pc</dt><dd>The simulated EEG component: summed attentional excitation minus inhibition over the left half of the field, minus the same over the right half. A lateralised target produces the characteristic deflection.</dd></div>
+          <div><dt>Colour range: fixed or auto</dt><dd>Fixed uses the same scale on every map, the model's activation bounds of {ACT_MIN} to {ACT_MAX}, so maps are directly comparable. Auto stretches each map to its own lowest and highest value across the whole run, which makes faint maps readable but means colours no longer mean the same thing from one map to the next.</dd></div>
         </dl>
       </details>
     </div>

@@ -1,3 +1,5 @@
+import { ACT_MAX, ACT_MIN } from '../viz/colormap'
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -29,7 +31,8 @@ export function Guide({ open, onClose, onLanding }: Props) {
             <ul>
               <li>It re-simulates on every change. The pill in the top bar says <b>live</b> when it's done.</li>
               <li><b>Scrub</b> by dragging the N2pc trace or the schedule; <b>▶</b> plays; <b>← →</b> step 1 ms (shift: 10 ms).</li>
-              <li>The <b>3-D surface</b> shows one map at the current instant. Pick which with the chips and drag to orbit. The small maps show everything at once; click one to feature it.</li>
+              <li>The <b>3D surface</b> shows one map at the current instant. Pick which with the chips and drag to orbit. The small maps show everything at once; click one to feature it.</li>
+              <li>Hover any map to read a cell's value. The <b>fixed / auto</b> toggle under the surface sets the colour scale: fixed is the same {ACT_MIN} to {ACT_MAX} on every map so they compare directly; auto stretches each map to its own range so faint ones become readable.</li>
               <li>The <b>probe</b> (white marker) is a location; the trace charts show its full time course. Click any map to move it. Selecting an object moves the probe onto it.</li>
             </ul>
           </section>

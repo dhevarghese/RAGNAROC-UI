@@ -76,7 +76,7 @@ export function Landing({ onOpen, resumeName }: Props) {
             <span className="step-num">4</span>
             <div>
               <h3>Read the results</h3>
-              <p>Scrub time on the N2pc trace or press play. The 3-D surface shows one brain map at that
+              <p>Scrub time on the N2pc trace or press play. The 3D surface shows one brain map at that
                 instant; the small maps show all of them. Click anywhere to move the probe and see that
                 location's full time course. Share link puts the whole experiment in the URL.</p>
             </div>

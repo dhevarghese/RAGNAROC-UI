@@ -283,7 +283,7 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .remove-row { display: flex; gap: 6px; align-items: center; }
 .remove-row select { flex: 1; min-width: 0; }
 
-/* Featured 3-D surface + thumbnails */
+/* Featured 3D surface + thumbnails */
 .featured { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 @media (max-width: 1200px) { .featured { grid-template-columns: 1fr; } }
 .featured-surface { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
