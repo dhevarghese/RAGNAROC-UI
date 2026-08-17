@@ -39,6 +39,11 @@ export default function App() {
   const redo = useCallback(() => rawDispatch({ type: 'redo' }), [])
   const undoState: UndoState = { canUndo: history.past.length > 0, canRedo: history.future.length > 0, undo, redo }
 
+  // The tab shows what is open.
+  useEffect(() => {
+    document.title = route === 'app' && experiment.name ? `${experiment.name}: Ragnaroc` : 'Ragnaroc: visual attention simulator'
+  }, [route, experiment.name])
+
   // Autosave the working experiment so a reload never loses it.
   useEffect(() => {
     const t = setTimeout(() => saveDraft(experiment), DRAFT_SAVE_MS)

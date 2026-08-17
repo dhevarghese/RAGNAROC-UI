@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PRESETS } from '../model/presets'
 import type { UndoState } from '../App'
 import type { Experiment } from '../model/types'
+import { download, experimentJson, parseExperimentJson, slug } from '../state/exportData'
 import { loadLibrary, removeFromLibrary, saveToLibrary, shareUrl, type Action, type SavedExperiment } from '../state/experiment'
 
 interface Props {
@@ -54,6 +55,23 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
   const save = () => {
     saveToLibrary(experiment)
     setToast(`Saved “${experiment.name}” in this browser.`)
+  }
+
+  const fileRef = useRef<HTMLInputElement>(null)
+  const exportJson = () => {
+    download(`${slug(experiment.name)}.json`, new Blob([experimentJson(experiment)], { type: 'application/json' }))
+    setMenu(null)
+  }
+  const importJson = async (file: File | undefined) => {
+    if (!file) return
+    const exp = parseExperimentJson(await file.text())
+    if (exp) {
+      dispatch({ type: 'replace', experiment: exp })
+      setToast(`Imported “${exp.name}”.`)
+    } else {
+      setToast('That file is not a Ragnaroc experiment.')
+    }
+    setMenu(null)
   }
 
   return (
@@ -109,6 +127,11 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
           <button className={`btn${menu === 'library' ? ' active' : ''}`} onClick={openLibrary}>Saved ▾</button>
           {menu === 'library' && (
             <ul className="menu">
+              <li className="menu-tools">
+                <button className="btn small" onClick={exportJson} title="Download this experiment as a JSON file">Export JSON</button>
+                <button className="btn small" onClick={() => fileRef.current?.click()} title="Load an experiment from a JSON file">Import JSON</button>
+                <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { void importJson(e.target.files?.[0]); e.target.value = '' }} />
+              </li>
               {library.length === 0 && <li className="menu-empty muted">Nothing saved yet in this browser.</li>}
               {library.map((s) => (
                 <li key={s.experiment.name} className="menu-row">

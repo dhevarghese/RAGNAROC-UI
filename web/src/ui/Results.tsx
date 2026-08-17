@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Experiment, SimulationResult } from '../model/types'
+import { canvasPng, download, frameCsv, mapsSheetPng, slug, tracesCsv } from '../state/exportData'
 import { stimColor } from '../state/experiment'
 import { ACT_MAX, ACT_MIN, FIXED_RANGE, legendGradient, seriesRange, type Range } from '../viz/colormap'
 import { Heatmap } from '../viz/Heatmap'
@@ -57,6 +58,15 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   const [surfaceW, setSurfaceW] = useState(560)
   const gridRef = useRef<HTMLDivElement>(null)
   const surfRef = useRef<HTMLDivElement>(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!exportOpen) return
+    const onDoc = (e: MouseEvent) => { if (!exportRef.current?.contains(e.target as Node)) setExportOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [exportOpen])
 
   useEffect(() => {
     const el = surfRef.current
@@ -223,6 +233,28 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   const surfaceMarkers = experiment.objects.map((o, i) => ({ ...markers[i], label: o.name }))
   const selRange = rangeOf(sel.kind, selStim)
 
+  const base = slug(experiment.name)
+  const exportTraces = () => download(`${base}-traces-probe-${px}-${py}.csv`, new Blob([tracesCsv(experiment, result, { x: px, y: py }, visiblePins)], { type: 'text/csv' }))
+  const exportFrame = () => download(`${base}-${sel.kind}${sel.kind === 'AM' || sel.kind === 'IG' ? '' : '-' + slug(stimNames[selStim] ?? '')}-${clampedStep}ms.csv`, new Blob([frameCsv(selData, w, h, clampedStep)], { type: 'text/csv' }))
+  const exportSurface = async () => {
+    const c = surfRef.current?.querySelector('canvas')
+    if (c) download(`${base}-${sel.kind}-surface-${clampedStep}ms.png`, await canvasPng(c))
+  }
+  const exportSheet = async () => {
+    const rows = [
+      { label: 'shared', maps: [{ title: 'AM attention map', data: result.AM.data, range: rangeOf('AM') }, { title: 'IG inhibitory gate', data: result.IG.data, range: rangeOf('IG') }] },
+      ...experiment.stimulusTypes.map((st, i) => ({
+        label: st.name,
+        maps: [
+          { title: 'EV early visual', data: result.EV[i].data, range: rangeOf('EV', i) },
+          { title: 'LV late visual', data: result.LV[i].data, range: rangeOf('LV', i) },
+          { title: 'II inhib. interneurons', data: result.II[i].data, range: rangeOf('II', i) },
+        ],
+      })),
+    ]
+    download(`${base}-all-maps-${clampedStep}ms.png`, await mapsSheetPng(experiment, result, clampedStep, rows))
+  }
+
   return (
     <div className="results">
       <div className="timeline">
@@ -244,6 +276,17 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             <span className="muted small">drag the trace or the schedule to scrub, space to play, arrow keys to step. Objects can appear from {T1_ONSET + 1} ms</span>
           </div>
           <span className="muted small">simulated in {result.elapsedMs.toFixed(0)} ms</span>
+          <div className="menu-wrap" ref={exportRef}>
+            <button className={`btn small${exportOpen ? ' active' : ''}`} onClick={() => setExportOpen((o) => !o)}>Export ▾</button>
+            {exportOpen && (
+              <ul className="menu menu-right">
+                <li><button onClick={() => { exportTraces(); setExportOpen(false) }}><b>Time courses (CSV)</b><span>N2pc, every map at the probe ({px}, {py}){visiblePins.length ? ` and ${visiblePins.length} pinned probe${visiblePins.length > 1 ? 's' : ''}` : ''}, one row per ms</span></button></li>
+                <li><button onClick={() => { exportFrame(); setExportOpen(false) }}><b>{selTitle} at {clampedStep} ms (CSV)</b><span>the featured map as a {w} x {h} grid</span></button></li>
+                <li><button onClick={() => { void exportSheet(); setExportOpen(false) }}><b>All maps at {clampedStep} ms (PNG)</b><span>one labelled sheet, {autoRange ? 'auto' : 'fixed'} colour scale</span></button></li>
+                <li><button onClick={() => { void exportSurface(); setExportOpen(false) }}><b>3D surface (PNG)</b><span>exactly as shown, current angle</span></button></li>
+              </ul>
+            )}
+          </div>
         </div>
         <TraceChart
           traces={[{ label: 'N2pc (simulated EEG: left − right hemifield)', color: '#ffffff', values: result.n2pc }]}

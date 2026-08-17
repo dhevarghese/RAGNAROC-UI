@@ -104,7 +104,7 @@ export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props)
           <h2>Stimulus types</h2>
           <button className="btn small" onClick={() => dispatch({ type: 'stim/add' })}>+ add</button>
         </header>
-        <p className="help">What can appear. <b>Bottom-up</b> is how physically salient it is; <b>top-down</b> is how relevant it is to the task. Both from 0 to 1.</p>
+        <p className="help">What can appear. Bottom-up is how physically salient it is; top-down is how relevant it is to the task. Both from 0 to 1.</p>
         {stimulusTypes.length === 0 && <p className="muted">Add at least one stimulus type.</p>}
         {stimulusTypes.map((s, i) => (
           <div className="stim-card" key={s.id} style={{ borderColor: stimColor(i) }}>
@@ -138,7 +138,7 @@ export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props)
           <h2>Objects</h2>
           <span className="muted small">{objects.length} placed</span>
         </header>
-        <p className="help">Each object is one appearance of a stimulus type at (x, y): it shows up after <b>latency</b> ms and stays for <b>duration</b> ms. Click the field to add.</p>
+        <p className="help">Each object is one appearance of a stimulus type at (x, y): it shows up after its latency and stays for its duration, both in ms. Click the field to add.</p>
         <ul className="obj-list">
           {objects.map((o) => {
             const i = Math.max(0, stimulusTypes.findIndex((s) => s.id === o.stimulus))
