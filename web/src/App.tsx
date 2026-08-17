@@ -96,6 +96,8 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
   const [step, setStepRaw] = useState(200)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [probe, setProbe] = useState({ x: 14, y: 14 })
+  // On narrow screens the inspector collapses behind a "Setup" button in the top bar.
+  const [sideOpen, setSideOpen] = useState(false)
 
   const setStep = useCallback((s: number) => setStepRaw(Math.max(0, Math.min(experiment.runtime - 1, s))), [experiment.runtime])
 
@@ -109,6 +111,9 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
     const o = experiment.objects.find((x) => x.id === selectedId)
     if (o) setProbe({ x: o.x, y: o.y })
   }, [selectedId, experiment.objects])
+  useEffect(() => {
+    if (selectedId && window.matchMedia('(max-width: 980px)').matches) setSideOpen(true)
+  }, [selectedId])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -152,9 +157,10 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
       <TopBar
         experiment={experiment} dispatch={dispatch} undoState={undoState}
         status={{ ...sim, elapsedMs: sim.result?.elapsedMs }} onGuide={onGuide} onHome={onHome}
+        sideOpen={sideOpen} onToggleSide={() => setSideOpen((o) => !o)}
       />
       <main className="layout">
-        <aside className="side">
+        <aside id="side-panel" className={`side${sideOpen ? ' open' : ''}`}>
           <Inspector experiment={experiment} dispatch={dispatch} selectedId={selectedId} onSelect={setSelectedId} />
         </aside>
         <section className="stage">

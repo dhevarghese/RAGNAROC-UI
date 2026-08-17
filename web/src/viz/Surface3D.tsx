@@ -243,6 +243,7 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, pin
         onPointerMove={(e) => {
           const d = dragRef.current
           if (!d) {
+            if (e.pointerType === 'touch') return
             const r = e.currentTarget.getBoundingClientRect()
             setHover(nearest(e.clientX - r.left, e.clientY - r.top))
             return

@@ -123,7 +123,7 @@ export function Heatmap({ data, w, h, step, size, probe, markers, pins, onPick, 
           ref={ref}
           style={{ width: size, height: size, cursor: onPick ? 'crosshair' : 'default' }}
           onClick={(e) => { if (onPick) { const c = cellAt(e); onPick(c.x, c.y) } }}
-          onPointerMove={(e) => setHover(cellAt(e))}
+          onPointerMove={(e) => setHover(e.pointerType === 'touch' ? null : cellAt(e))}
           onPointerLeave={() => setHover(null)}
           aria-label={`${title} activation map`}
         />

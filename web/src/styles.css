@@ -56,7 +56,10 @@ input, select { font: inherit; }
 @media (max-width: 980px) {
   .layout { grid-template-columns: 1fr; }
   .side { border-right: none !important; border-bottom: 1px solid var(--line); }
+  /* the inspector collapses behind the Setup button in the top bar */
+  .side:not(.open) { display: none; }
 }
+@media (min-width: 981px) { .setup-toggle { display: none; } }
 .side {
   border-right: 1px solid var(--line);
   background: var(--bg-2);
@@ -139,9 +142,13 @@ input, select { font: inherit; }
   white-space: nowrap;
 }
 @media (max-width: 720px) {
-  .topbar { gap: 8px; padding: 0 10px; }
+  .topbar { gap: 6px 8px; padding: 6px 10px; height: auto; flex-wrap: wrap; }
   .status { display: none; }
-  .exp-name { flex-basis: 140px; }
+  .brand span { display: none; }
+  .exp-name { flex: 1 1 120px; min-width: 0; }
+  .actions { flex-wrap: wrap; }
+  .actions .menu-wrap { position: static; }
+  .menu { left: 8px; right: 8px; min-width: 0; }
 }
 .btn:hover { border-color: rgba(255,255,255,0.28); }
 .btn.active { border-color: var(--accent); }
@@ -202,7 +209,7 @@ input, select { font: inherit; }
 @media (max-width: 1100px) { .field-and-schedule { grid-template-columns: 1fr; } }
 .canvas-editor { display: flex; flex-direction: column; gap: 6px; }
 .field { }
-svg.field { display: block; touch-action: none; user-select: none; }
+svg.field { display: block; touch-action: none; user-select: none; max-width: 100%; height: auto; }
 .field-bg { fill: #0a0c11; stroke: var(--line-2); }
 .field-grid line { stroke: rgba(255,255,255,0.05); }
 .field-fixation line { stroke: rgba(255,255,255,0.35); stroke-width: 1; }
@@ -239,6 +246,7 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .maps-row-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; padding: 4px 0; align-self: stretch; }
 .heatmap { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .heatmap-body, .surface-body { position: relative; }
+.surface-body { max-width: 100%; }
 .cell-hover { position: absolute; pointer-events: none; box-sizing: border-box; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
 .cell-hover.ring { width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); }
 .cell-tip {
@@ -321,7 +329,7 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .chip-select { background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 999px; color: var(--text); font-size: 12px; padding: 3px 8px; }
 .surface3d { margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .surface3d figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.surface3d canvas { border-radius: 8px; background: radial-gradient(ellipse at 50% 60%, #14171e 0%, #0b0d12 75%); border: 1px solid var(--line); }
+.surface3d canvas { max-width: 100%; border-radius: 8px; background: radial-gradient(ellipse at 50% 60%, #14171e 0%, #0b0d12 75%); border: 1px solid var(--line); }
 .legend-inline { max-width: none; align-self: stretch; padding: 0 6px; }
 .maps-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
 .thumb { border-radius: 8px; padding: 4px; border: 1px solid transparent; }
@@ -382,4 +390,26 @@ svg.field { display: block; touch-action: none; user-select: none; }
 /* respect the OS setting: no pulsing dot, no sliding drawer, no progress-bar easing */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* touch: horizontal gestures scrub, vertical still scrolls the page */
+.trace-wrap canvas, .schedule-track { touch-action: pan-y; }
+@media (pointer: coarse) {
+  .btn, .chip, .chip-select { min-height: 36px; }
+  .btn.small { padding: 6px 12px; }
+  .icon-btn { width: 32px; height: 32px; }
+  .btn.play { width: 40px; height: 40px; }
+  .heatmap-body, .surface-body { touch-action: none; }
+  .obj-list li { padding: 8px 6px; }
+}
+@media (max-width: 720px) {
+  .stage { padding: 14px 12px 32px; gap: 16px; }
+  .side { padding-bottom: 8px; }
+  .timeline-head { flex-wrap: wrap; row-gap: 8px; }
+  .timeline-readout { flex: 1 1 100%; order: -1; }
+  .timeline-head > .muted.small { display: none; }
+  .traces-head h3 { font-size: 13px; }
+  .landing { padding-left: 16px; padding-right: 16px; }
+  .landing-hero h1 { font-size: 34px; }
+  .landing-cta .btn.big { flex: 1 1 100%; text-align: center; }
 }

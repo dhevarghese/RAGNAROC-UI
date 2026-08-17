@@ -13,9 +13,12 @@ interface Props {
   status: { running: boolean; progress: number | null; problems: string[]; error: string | null; elapsedMs?: number }
   onGuide: () => void
   onHome: () => void
+  /** narrow screens only: whether the inspector is shown */
+  sideOpen?: boolean
+  onToggleSide?: () => void
 }
 
-export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHome }: Props) {
+export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHome, sideOpen, onToggleSide }: Props) {
   const [menu, setMenu] = useState<null | 'presets' | 'library'>(null)
   const [library, setLibrary] = useState<SavedExperiment[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -111,6 +114,11 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
       <div className={`run-progress${status.running ? ' on' : ''}`} style={{ width: `${Math.round((status.progress ?? 0) * 100)}%` }} aria-hidden />
 
       <nav className="actions">
+        {onToggleSide && (
+          <button className={`btn setup-toggle${sideOpen ? ' active' : ''}`} onClick={onToggleSide} aria-expanded={sideOpen} aria-controls="side-panel">
+            {sideOpen ? 'Hide setup' : 'Setup'}
+          </button>
+        )}
         <div className="undo-group">
           <button className="btn icon" onClick={undoState.undo} disabled={!undoState.canUndo} title="Undo (⌘Z)" aria-label="undo">↶</button>
           <button className="btn icon" onClick={undoState.redo} disabled={!undoState.canRedo} title="Redo (⇧⌘Z)" aria-label="redo">↷</button>
