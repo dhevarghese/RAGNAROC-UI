@@ -238,3 +238,66 @@ svg.field { display: block; touch-action: none; user-select: none; }
 .map-glossary dd { margin: 0; color: var(--text-3); font-size: 12.5px; line-height: 1.5; }
 .results-empty { padding: 40px; text-align: center; color: var(--text-2); border: 1px dashed var(--line-2); border-radius: var(--radius); }
 .results-empty ul { text-align: left; display: inline-block; margin: 10px 0 0; color: var(--warn); }
+
+/* Featured 3-D surface + thumbnails */
+.featured { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1200px) { .featured { grid-template-columns: 1fr; } }
+.featured-surface { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.featured-head { display: flex; flex-direction: column; gap: 6px; }
+.map-picker { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chip { background: transparent; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 11px; font-size: 12px; font-family: var(--mono); cursor: pointer; color: var(--text-2); }
+.chip:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chip-sep { width: 1px; height: 16px; background: var(--line-2); margin: 0 4px; }
+.chip-select { background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 999px; color: var(--text); font-size: 12px; padding: 3px 8px; }
+.surface3d { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.surface3d figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.surface3d canvas { border-radius: 8px; background: radial-gradient(ellipse at 50% 60%, #14171e 0%, #0b0d12 75%); border: 1px solid var(--line); }
+.legend-inline { max-width: none; align-self: stretch; padding: 0 6px; }
+.maps-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+.thumb { border-radius: 8px; padding: 4px; border: 1px solid transparent; }
+.thumb.active { border-color: var(--accent); background: rgba(245, 181, 63, 0.06); }
+.guide-btn { width: 32px; padding: 6px 0; font-weight: 700; }
+
+/* Guide drawer */
+.guide-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; display: flex; justify-content: flex-end; }
+.guide { width: min(440px, 100vw); height: 100%; background: var(--bg-2); border-left: 1px solid var(--line-2); overflow-y: auto; box-shadow: -20px 0 60px rgba(0,0,0,0.5); animation: slidein 0.18s ease-out; }
+@keyframes slidein { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.guide-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg-2); }
+.guide-head h2 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--text); }
+.guide-body { padding: 8px 18px 24px; display: flex; flex-direction: column; gap: 14px; }
+.guide-body h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 6px; }
+.guide-body ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--text-2); font-size: 13px; line-height: 1.5; }
+.guide-body b { color: var(--text); font-weight: 600; }
+
+/* Landing */
+.landing { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+.landing-hero { text-align: center; padding: 72px 0 40px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.landing-logo { height: 64px; }
+.landing h1 { font-size: 46px; letter-spacing: 0.02em; }
+.landing-tag { font-size: 19px; color: var(--text-2); }
+.landing-lede { color: var(--text-2); max-width: 640px; line-height: 1.65; font-size: 15px; }
+.landing-cta { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.btn.big { padding: 11px 20px; font-size: 15px; border-radius: 9px; text-decoration: none; display: inline-block; }
+.landing-section { padding: 36px 0 8px; }
+.landing-section h2 { font-size: 22px; text-transform: none; letter-spacing: -0.01em; color: var(--text); margin-bottom: 18px; }
+.how-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 28px; }
+.how-steps li { display: flex; gap: 14px; align-items: flex-start; }
+.how-steps h3 { font-size: 15px; color: var(--text); margin-bottom: 4px; }
+.how-steps p { color: var(--text-2); line-height: 1.6; font-size: 13.5px; }
+.how-steps b, .about b { color: var(--text); font-weight: 600; }
+.step-num { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.preset-card { display: grid; grid-template-columns: 96px 1fr; grid-template-rows: auto 1fr; column-gap: 14px; row-gap: 4px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; cursor: pointer; }
+.preset-card:hover { border-color: var(--accent); }
+.preset-card .preset-thumb { grid-row: 1 / span 2; border-radius: 8px; }
+.preset-card b { font-size: 14px; }
+.preset-card span { color: var(--text-3); font-size: 12.5px; line-height: 1.45; }
+.map-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 0; }
+.map-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.map-card dt { font-weight: 600; margin-bottom: 4px; }
+.map-card dd { margin: 0; color: var(--text-3); font-size: 13px; line-height: 1.5; }
+.about p { color: var(--text-2); line-height: 1.65; max-width: 720px; margin-bottom: 10px; }
+.landing-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.landing-links a { color: var(--accent); text-decoration: none; }
+.landing-links a:hover { text-decoration: underline; }

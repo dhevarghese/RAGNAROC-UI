@@ -8,9 +8,11 @@ interface Props {
   experiment: Experiment
   dispatch: (a: Action) => void
   status: { running: boolean; progress: number | null; problems: string[]; error: string | null; elapsedMs?: number }
+  onGuide: () => void
+  onHome: () => void
 }
 
-export function TopBar({ experiment, dispatch, status }: Props) {
+export function TopBar({ experiment, dispatch, status, onGuide, onHome }: Props) {
   const [menu, setMenu] = useState<null | 'presets' | 'library'>(null)
   const [library, setLibrary] = useState<SavedExperiment[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -54,7 +56,7 @@ export function TopBar({ experiment, dispatch, status }: Props) {
 
   return (
     <header className="topbar" ref={wrapRef}>
-      <a className="brand" href="./">
+      <a className="brand" href="#" onClick={(e) => { e.preventDefault(); onHome() }} title="About / introduction">
         <img src="./logo.png" alt="" />
         <span>Ragnaroc</span>
       </a>
@@ -116,6 +118,7 @@ export function TopBar({ experiment, dispatch, status }: Props) {
         </div>
         <button className="btn" onClick={save}>Save</button>
         <button className="btn primary" onClick={share}>Share link</button>
+        <button className="btn guide-btn" onClick={onGuide} title="Quick guide (?)">?</button>
       </nav>
       {toast && <div className="toast">{toast}</div>}
     </header>

@@ -4,8 +4,12 @@ import type { Experiment, SimulationResult } from '../model/types'
 import { stimColor } from '../state/experiment'
 import { ACT_MAX, ACT_MIN, legendGradient } from '../viz/colormap'
 import { Heatmap } from '../viz/Heatmap'
+import { Surface3D } from '../viz/Surface3D'
 import { TraceChart, type Trace } from '../viz/TraceChart'
 import { T1_ONSET } from './Schedule'
+
+type MapKind = 'AM' | 'IG' | 'EV' | 'LV' | 'II'
+interface MapSel { kind: MapKind; stim: number }
 
 interface Props {
   experiment: Experiment
@@ -35,40 +39,53 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   const n = w * h
   const [playing, setPlaying] = useState(false)
   const [mapSize, setMapSize] = useState(148)
+  const [sel, setSel] = useState<MapSel>({ kind: 'AM', stim: 0 })
+  const [surfaceW, setSurfaceW] = useState(560)
   const gridRef = useRef<HTMLDivElement>(null)
+  const surfRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = surfRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setSurfaceW(Math.max(320, el.clientWidth)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   // Fit the small multiples to the available width.
   useEffect(() => {
     const el = gridRef.current
     if (!el) return
     const ro = new ResizeObserver(() => {
-      const width = el.clientWidth
-      const perStim = experiment.stimulusTypes.length
-      const count = 2 + perStim * 3
-      // aim for at most one row of shared maps + one row per stimulus, ~5 tiles per row max
-      const cols = Math.min(count, Math.max(3, Math.floor(width / 170)))
-      setMapSize(Math.max(96, Math.floor((width - (cols - 1) * 14) / cols)))
+      // three thumbnails + a row label per row
+      const width = el.clientWidth - 22
+      setMapSize(Math.max(84, Math.min(150, Math.floor((width - 2 * 12) / 3))))
     })
     ro.observe(el)
     return () => ro.disconnect()
   }, [experiment.stimulusTypes.length])
 
-  // playback
+  // playback: ~8 simulated ms per real ms of wall clock, wrapping at the end
+  const stepRef = useRef(step)
+  stepRef.current = step
   useEffect(() => {
     if (!playing) return
     let raf = 0
     let last = performance.now()
+    let acc = 0
     const tick = (now: number) => {
-      const dt = now - last
-      if (dt > 16) {
-        last = now
-        setStep((step + Math.max(1, Math.round(dt / 8))) % steps)
+      acc += (now - last) / 8
+      last = now
+      const advance = Math.floor(acc)
+      if (advance >= 1) {
+        acc -= advance
+        setStep((stepRef.current + advance) % steps)
       }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [playing, step, steps, setStep])
+  }, [playing, steps, setStep])
 
   const clampedStep = Math.min(step, steps - 1)
   const px = Math.min(probe.x, w), py = Math.min(probe.y, h)
@@ -115,6 +132,19 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
   const pick = (x: number, y: number) => setProbe({ x, y })
   const probeVal = (data: Float32Array) => data[clampedStep * n + probeIndex]
 
+  const stimCount = experiment.stimulusTypes.length
+  const selStim = Math.min(sel.stim, Math.max(0, stimCount - 1))
+  const selData = sel.kind === 'AM' ? result.AM.data
+    : sel.kind === 'IG' ? result.IG.data
+    : (sel.kind === 'EV' ? result.EV : sel.kind === 'LV' ? result.LV : result.II)[selStim].data
+  const selTitle = MAP_INFO[sel.kind].title + (sel.kind === 'AM' || sel.kind === 'IG' ? '' : ` · ${stimNames[selStim] ?? ''}`)
+  const isSel = (kind: MapKind, stim = 0) => sel.kind === kind && (kind === 'AM' || kind === 'IG' || selStim === stim)
+  const pickAndSelect = (kind: MapKind, stim = 0) => (x: number, y: number) => {
+    setSel({ kind, stim })
+    pick(x, y)
+  }
+  const surfaceMarkers = experiment.objects.map((o, i) => ({ ...markers[i], label: o.name }))
+
   return (
     <div className="results">
       <div className="timeline">
@@ -135,26 +165,58 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
         />
       </div>
 
-      <div className="maps" ref={gridRef}>
-        <div className="maps-row">
-          <Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pick} />
-          <Heatmap title={MAP_INFO.IG.title} subtitle={`${probeVal(result.IG.data).toFixed(1)} at probe`} data={result.IG.data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pick} />
-          <div className="legend">
+      <div className="featured">
+        <div className="featured-surface" ref={surfRef}>
+          <div className="featured-head">
+            <div className="map-picker" role="tablist" aria-label="map shown in 3-D">
+              {(['AM', 'IG'] as MapKind[]).map((k) => (
+                <button key={k} role="tab" aria-selected={isSel(k)} className={`chip${isSel(k) ? ' active' : ''}`} onClick={() => setSel({ kind: k, stim: 0 })}>{k}</button>
+              ))}
+              {stimCount > 0 && <span className="chip-sep" />}
+              {(['EV', 'LV', 'II'] as MapKind[]).map((k) => (
+                <button key={k} role="tab" aria-selected={sel.kind === k} className={`chip${sel.kind === k ? ' active' : ''}`} onClick={() => setSel({ kind: k, stim: selStim })}>{k}</button>
+              ))}
+              {(sel.kind === 'EV' || sel.kind === 'LV' || sel.kind === 'II') && stimCount > 1 && (
+                <select className="chip-select" value={selStim} onChange={(e) => setSel({ kind: sel.kind, stim: Number(e.target.value) })} aria-label="stimulus type">
+                  {experiment.stimulusTypes.map((s, i) => <option key={s.id} value={i}>{s.name}</option>)}
+                </select>
+              )}
+            </div>
+            <p className="help">{MAP_INFO[sel.kind].blurb}</p>
+          </div>
+          <Surface3D
+            title={selTitle}
+            subtitle={`${probeVal(selData).toFixed(1)} at probe`}
+            data={selData} w={w} h={h} step={clampedStep}
+            width={surfaceW} height={Math.round(surfaceW * 0.62)}
+            probe={{ x: px, y: py }} markers={surfaceMarkers} onPick={pick}
+          />
+          <div className="legend legend-inline">
             <div className="legend-bar" style={{ background: legendGradient() }} />
-            <div className="legend-ticks"><span>{ACT_MIN}</span><span>activation</span><span>{ACT_MAX}</span></div>
-            <p className="help">Click any map to move the probe (white square). Rings mark object positions; solid when on screen.</p>
+            <div className="legend-ticks"><span>{ACT_MIN}</span><span>activation (height and colour)</span><span>{ACT_MAX}</span></div>
           </div>
         </div>
-        {experiment.stimulusTypes.map((s, i) => (
-          <div className="maps-row" key={s.id}>
-            <div className="maps-row-label" style={{ color: stimColor(i) }}>
-              <span className="swatch" style={{ background: stimColor(i) }} />{s.name}
-            </div>
-            <Heatmap title="Early visual" data={result.EV[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pick} />
-            <Heatmap title="Late visual" data={result.LV[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pick} />
-            <Heatmap title="Inhib. interneurons" data={result.II[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pick} />
+
+        <div className="maps" ref={gridRef}>
+          <div className="maps-head">
+            <h3>All maps at {clampedStep} ms</h3>
+            <span className="help">click a map to feature it in 3-D and move the probe</span>
           </div>
-        ))}
+          <div className="maps-row">
+            <div className={`thumb${isSel('AM') ? ' active' : ''}`}><Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('AM')} /></div>
+            <div className={`thumb${isSel('IG') ? ' active' : ''}`}><Heatmap title={MAP_INFO.IG.title} subtitle={`${probeVal(result.IG.data).toFixed(1)} at probe`} data={result.IG.data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('IG')} /></div>
+          </div>
+          {experiment.stimulusTypes.map((s, i) => (
+            <div className="maps-row" key={s.id}>
+              <div className="maps-row-label" style={{ color: stimColor(i) }}>
+                <span className="swatch" style={{ background: stimColor(i) }} />{s.name}
+              </div>
+              <div className={`thumb${isSel('EV', i) ? ' active' : ''}`}><Heatmap title="Early visual" data={result.EV[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('EV', i)} /></div>
+              <div className={`thumb${isSel('LV', i) ? ' active' : ''}`}><Heatmap title="Late visual" data={result.LV[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('LV', i)} /></div>
+              <div className={`thumb${isSel('II', i) ? ' active' : ''}`}><Heatmap title="Inhib. interneurons" data={result.II[i].data} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('II', i)} /></div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="traces">
