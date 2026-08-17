@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import type { Experiment, StimulusType } from '../model/types'
+import { estimateResultBytes, MAX_RESULT_BYTES, WARN_RESULT_BYTES } from '../model/ragnaroc'
 import { stimColor, type Action } from '../state/experiment'
 
 interface Props {
@@ -79,6 +80,21 @@ function RemovePrompt({ stim, count, others, onDone }: {
         <button className="btn small" onClick={() => onDone()}>Cancel</button>
       </div>
     </div>
+  )
+}
+
+/** How much memory the results will take; only speaks up when it starts to matter. */
+function MemoryNote({ experiment }: { experiment: Experiment }) {
+  const bytes = estimateResultBytes(experiment)
+  if (!Number.isFinite(bytes) || bytes < WARN_RESULT_BYTES) return null
+  const mb = Math.round(bytes / 1048576)
+  const over = bytes > MAX_RESULT_BYTES
+  return (
+    <p className={`help ${over ? 'mem-over' : 'mem-warn'}`}>
+      {over
+        ? `About ${mb} MB of results: too much for the browser (limit ${Math.round(MAX_RESULT_BYTES / 1048576)} MB). Reduce runtime, canvas or stimulus types.`
+        : `About ${mb} MB of results. Large runs take longer and use a lot of memory; playback may stutter.`}
+    </p>
   )
 }
 
@@ -180,6 +196,7 @@ export function Inspector({ experiment, dispatch, selectedId, onSelect }: Props)
           <NumberField label="canvas" value={experiment.canvas} min={1} max={50} hint="N × N cells" onChange={(v) => dispatch({ type: 'set', patch: { canvas: v } })} />
           <NumberField label="mask" value={experiment.mask} min={1} max={10} hint="neighbourhood radius" onChange={(v) => dispatch({ type: 'set', patch: { mask: v } })} />
         </div>
+        <MemoryNote experiment={experiment} />
       </section>
     </div>
   )

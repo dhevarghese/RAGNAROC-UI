@@ -15,6 +15,8 @@ export type Action =
   | { type: 'obj/add'; obj: Partial<VisualObject> & Pick<VisualObject, 'x' | 'y'> }
   | { type: 'obj/update'; id: string; patch: Partial<VisualObject> }
   | { type: 'obj/remove'; id: string }
+  /** Move an object by whole cells, clamped to the canvas. */
+  | { type: 'obj/nudge'; id: string; dx: number; dy: number }
   /** Pull every object back inside the current canvas. */
   | { type: 'obj/clamp' }
 
@@ -67,6 +69,11 @@ export function reducer(state: Experiment, action: Action): Experiment {
       return { ...state, objects: state.objects.map((o) => (o.id === action.id ? { ...o, ...action.patch } : o)) }
     case 'obj/remove':
       return { ...state, objects: state.objects.filter((o) => o.id !== action.id) }
+    case 'obj/nudge': {
+      const c = state.canvas
+      const clamp = (v: number) => Math.min(c, Math.max(1, v))
+      return { ...state, objects: state.objects.map((o) => (o.id === action.id ? { ...o, x: clamp(o.x + action.dx), y: clamp(o.y + action.dy) } : o)) }
+    }
     case 'obj/clamp': {
       const c = state.canvas
       if (!outOfBounds(state).length) return state
@@ -105,6 +112,7 @@ function editKey(a: Action): string | null {
     case 'set': return `set:${Object.keys(a.patch).sort().join(',')}`
     case 'stim/update': return `stim:${a.id}:${Object.keys(a.patch).sort().join(',')}`
     case 'obj/update': return `obj:${a.id}:${Object.keys(a.patch).sort().join(',')}`
+    case 'obj/nudge': return `nudge:${a.id}`
     default: return null
   }
 }

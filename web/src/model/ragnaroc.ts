@@ -354,12 +354,29 @@ export class AbortError extends Error {
 }
 
 /** Human-readable reasons an experiment can't run, in the order the model needs them fixed. */
+/**
+ * Bytes the result frames of a run will occupy in the browser: every map keeps
+ * one Float32 grid per simulated ms (AM, IG, and EV/LV/II per stimulus type).
+ */
+export function estimateResultBytes(exp: Experiment): number {
+  const cells = exp.canvas * exp.canvas
+  const maps = 2 + 3 * Math.max(1, exp.stimulusTypes.length)
+  return exp.runtime * cells * maps * 4
+}
+/** Above this the tab risks running out of memory (frames are transferred to the UI thread too). */
+export const MAX_RESULT_BYTES = 400 * 1024 * 1024
+export const WARN_RESULT_BYTES = 120 * 1024 * 1024
+
 export function validate(exp: Experiment): string[] {
   const problems: string[] = []
   if (!Number.isInteger(exp.runtime) || exp.runtime < 1 || exp.runtime > 3000) problems.push('Runtime must be a whole number of ms between 1 and 3000.')
   if (!Number.isInteger(exp.canvas) || exp.canvas < 1 || exp.canvas > 50) problems.push('Canvas size must be a whole number between 1 and 50.')
   if (!Number.isInteger(exp.mask) || exp.mask < 1 || exp.mask > 10) problems.push('Mask size must be a whole number between 1 and 10.')
   if (exp.mask > exp.canvas) problems.push('Mask cannot be larger than the canvas.')
+  if (Number.isFinite(exp.runtime) && Number.isFinite(exp.canvas)) {
+    const bytes = estimateResultBytes(exp)
+    if (bytes > MAX_RESULT_BYTES) problems.push(`This run would produce about ${Math.round(bytes / 1048576)} MB of results, more than the browser can safely hold (${Math.round(MAX_RESULT_BYTES / 1048576)} MB). Reduce the runtime, the canvas or the number of stimulus types.`)
+  }
   if (exp.stimulusTypes.length === 0) problems.push('Add at least one stimulus type.')
   if (exp.objects.length === 0) problems.push('Place at least one visual object.')
   const ids = new Set(exp.stimulusTypes.map((s) => s.id))

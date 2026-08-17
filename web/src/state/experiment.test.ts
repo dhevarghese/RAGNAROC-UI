@@ -22,6 +22,15 @@ describe('stim/remove', () => {
   })
 })
 
+describe('obj/nudge', () => {
+  it('moves by whole cells and clamps to the canvas', () => {
+    let e = reducer(lateral, { type: 'obj/nudge', id: 'o1', dx: 1, dy: 5 })
+    expect(e.objects[0]).toMatchObject({ x: 15, y: 12 })
+    e = reducer(e, { type: 'obj/nudge', id: 'o1', dx: 100, dy: -100 })
+    expect(e.objects[0]).toMatchObject({ x: 27, y: 1 })
+  })
+})
+
 describe('obj/clamp', () => {
   it('pulls objects back inside a shrunken canvas', () => {
     const shrunk = reducer(lateral, { type: 'set', patch: { canvas: 10 } })

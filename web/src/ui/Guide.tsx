@@ -22,7 +22,7 @@ export function Guide({ open, onClose, onLanding }: Props) {
             <ul>
               <li><b>Stimulus types</b> (left panel) are kinds of things, such as a target or a distractor. <b>Bottom-up</b> = salience, <b>top-down</b> = task relevance.</li>
               <li><b>Objects</b> are appearances of a type: one place, one time window. The model keeps a separate input map per type, so every object of a type is drawn into that type's map and the types compete through the shared attention map.</li>
-              <li><b>Click the field</b> to place an object; <b>drag</b> to move; <b>Delete</b> removes the selected one. Each object appears after its <b>latency</b> and stays for its <b>duration</b>.</li>
+              <li><b>Click the field</b> to place an object; <b>drag</b> to move; with one selected, <b>arrow keys</b> nudge it (shift: 5 cells), <b>Delete</b> removes it, <b>Esc</b> deselects. Each object appears after its <b>latency</b> and stays for its <b>duration</b>.</li>
               <li>The <b>schedule</b> shows when each object is on screen. Nothing can appear before 100 ms, which the model needs to settle.</li>
               <li><b>Simulation</b> settings: runtime (ms), canvas size, mask (neighbourhood radius).</li>
             </ul>
@@ -31,7 +31,7 @@ export function Guide({ open, onClose, onLanding }: Props) {
             <h3>Read</h3>
             <ul>
               <li>It re-simulates on every change. The pill in the top bar says <b>live</b> when it's done.</li>
-              <li><b>Scrub</b> by dragging the N2pc trace or the schedule; <b>▶</b> plays; <b>← →</b> step 1 ms (shift: 10 ms).</li>
+              <li><b>Scrub</b> by dragging the N2pc trace or the schedule; <b>▶</b> plays; <b>← →</b> step 1 ms (shift: 10 ms) when no object is selected; <b>space</b> plays and pauses.</li>
               <li>The <b>3D surface</b> shows one map at the current instant. Pick which with the chips and drag to orbit. The small maps show everything at once; click one to feature it.</li>
               <li>Hover any map to read a cell's value. The <b>fixed / auto</b> toggle under the surface sets the colour scale: fixed is the same {ACT_MIN} to {ACT_MAX} on every map so they compare directly; auto stretches each map to its own range so faint ones become readable.</li>
               <li>The <b>probe</b> (white marker) is a location; the trace charts show its full time course. Click any map to move it. Selecting an object moves the probe onto it.</li>

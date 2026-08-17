@@ -121,8 +121,19 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
         return
       }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); undoState.redo(); return }
+      const sel = selectedId ? experiment.objects.find((o) => o.id === selectedId) : undefined
+      if (sel && e.key.startsWith('Arrow')) {
+        // with an object selected the arrows nudge it (shift: 5 cells); Escape gives the arrows back to time
+        e.preventDefault()
+        const d = e.shiftKey ? 5 : 1
+        const dx = e.key === 'ArrowLeft' ? -d : e.key === 'ArrowRight' ? d : 0
+        const dy = e.key === 'ArrowUp' ? -d : e.key === 'ArrowDown' ? d : 0
+        dispatch({ type: 'obj/nudge', id: sel.id, dx, dy })
+        return
+      }
       if (e.key === 'ArrowLeft') setStep(step - (e.shiftKey ? 10 : 1))
       if (e.key === 'ArrowRight') setStep(step + (e.shiftKey ? 10 : 1))
+      if (e.key === 'Escape') setSelectedId(null)
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         dispatch({ type: 'obj/remove', id: selectedId })
         setSelectedId(null)
@@ -131,7 +142,7 @@ function Simulator({ experiment, dispatch, undoState, onGuide, onHome }: {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, selectedId, setStep, dispatch, onGuide, undoState])
+  }, [step, selectedId, setStep, dispatch, onGuide, undoState, experiment.objects])
 
   const clampedStep = Math.min(step, experiment.runtime - 1)
   const invalid = sim.problems.length > 0
