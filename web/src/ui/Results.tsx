@@ -304,8 +304,17 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             <div key={k}><dt>{v.title} <span className="mono muted">{k}</span></dt><dd>{v.blurb}</dd></div>
           ))}
           <div><dt>N2pc</dt><dd>The simulated EEG component: summed attentional excitation minus inhibition over the left half of the field, minus the same over the right half. A lateralised target produces the characteristic deflection.</dd></div>
-          <div><dt>Colour range: fixed or auto</dt><dd>Fixed uses the same scale on every map, the model's activation bounds of {ACT_MIN} to {ACT_MAX}, so maps are directly comparable. Auto stretches each map to its own lowest and highest value across the whole run, which makes faint maps readable but means colours no longer mean the same thing from one map to the next.</dd></div>
         </dl>
+      </details>
+
+      <details className="map-glossary">
+        <summary>What are the colour ranges, fixed and auto?</summary>
+        <p>Every map is drawn with the same colour ramp, from dark (low activation) to bright yellow (high). The toggle under the 3D surface decides what the ends of that ramp mean.</p>
+        <dl>
+          <div><dt>Fixed</dt><dd>The ramp always spans the model's activation bounds, {ACT_MIN} to {ACT_MAX}, on every map. A given colour means the same value everywhere, so you can compare maps with each other and across time. This is the default. Maps with small activations, such as early visual input or the inhibitory interneurons, look dim.</dd></div>
+          <div><dt>Auto</dt><dd>Each map is stretched to its own lowest and highest value across the whole run. Faint maps become fully readable and the 3D surface uses its full height. The trade-off is that colours no longer mean the same thing from one map to the next, so read the legend numbers before comparing.</dd></div>
+        </dl>
+        <p>The choice affects only how results are drawn, never the simulation itself. Hovering any map shows the actual value of a cell either way.</p>
       </details>
     </div>
   )
