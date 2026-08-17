@@ -23,3 +23,4 @@ npm-debug*
 data/
 file_system_backend/
 web/*.tsbuildinfo
+.claude/
