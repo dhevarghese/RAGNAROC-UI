@@ -93,3 +93,6 @@ dash_generator_test_component_typescript/
 inst/
 man/
 R/
+# web app (v2)
+web/node_modules/
+web/dist/
