@@ -1,3 +1,0 @@
-Cython>=3.2
-numpy>=2,<3
-setuptools

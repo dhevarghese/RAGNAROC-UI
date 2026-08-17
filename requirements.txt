@@ -1,7 +1,3 @@
-dash==4.4.1
-dash-extensions==2.0.6
-dash-bootstrap-components>=2.0
-plotly>=6
+Cython>=3.2
 numpy>=2,<3
-# Optional: DynamoDB storage backend (RAGNAROC_STORAGE=dynamo)
-# boto3
+setuptools

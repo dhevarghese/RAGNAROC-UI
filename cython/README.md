@@ -1,16 +1,40 @@
-# Steps to generate the cythonized binary file
+# Reference model
 
-Cython is used to achieve a performance gain over Python. The compiler generates very efficient code from Cython. On a Windows system, running `setup.py` generates a dll file optimized for Windows. Our AWS Elastic Beanstalk server uses a Linux environment, which requires a `.so` file. Therefore, in order to generate it, we must follow these steps.
+`ragnaroc.pyx` is the scientific reference implementation of the RAGNAROC
+model. The browser app runs a TypeScript port of it
+(`web/src/model/ragnaroc.ts`), and the port is verified against fixtures
+produced by this code.
 
-- Install Docker on your device
-- Make required changes to the .pyx file
-- In the command line, run the following commands after navigating to this folder, where name is a name you chose for the docker image that you will make
-    - `docker build -t <name> .`
-- In the command line, then run this, which will create a container from the image you just created.   name will be the same in the previous command
-    - `docker run <name>`
-- In Docker desktop, find the container that was just created, and copy the container ID, which is a list of random letters and numbers
-- Then run the following command
-    - `docker cp <containerID>:/ragnaroc.cpython-38-x86_64-linux-gnu.so .`
-- Replace the newly generated `.so` file for the existing one in the zip file that you have from Elastic Beanstalk and re-upload it, and you've successfully updated the model. Congratulations! :tada:
+## Build
 
+Python 3.10+ and a C compiler (Xcode command line tools on macOS,
+build-essential on Debian/Ubuntu, MSVC build tools on Windows).
 
+```bash
+pip install -r ../requirements.txt
+python setup.py build_ext --inplace
+mv ragnaroc.*.so ..      # the export script imports it from the repo root
+```
+
+## Use
+
+```python
+import numpy as np
+import ragnaroc
+
+EV, LV, IG, AM, II, N2pc, stimMap = ragnaroc.runTrial(
+    [{"name": "T", "X": 14, "Y": 7, "duration": 500, "latency": 0, "stimulus": "T"}],
+    [{"stimName": "T", "td": 0.4, "bu": 0.15}],
+    600,                       # steps (ms)
+    np.zeros((27, 27, 1)),     # video input (unused by the app; keep the shape)
+    xDim=27, yDim=27, NNMask=3,
+)
+```
+
+Maps are NumPy arrays indexed `[stimulus, step, x, y]` (`AM` and `IG` are
+`[step, x, y]`), `N2pc` is one value per step. `scripts/export_reference.py`
+is a complete example.
+
+`python scripts/export_reference.py` (from the repo root) runs a handful of
+experiments and writes `web/src/model/__fixtures__/reference.json`, which
+`npm test` in `web/` compares the port against.

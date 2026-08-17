@@ -1,98 +1,24 @@
-*.ipynb_notebooks
-# *.ipynb
+# macOS / editors
+.DS_Store
+.idea/
+.vscode/
 
-# Dash-extensions generated folders (serverside store cache)
-file_system_store/
-file_system_backend/
-
-# Compiled extension modules and Cython build output
+# Python (reference model build)
+__pycache__/
+*.py[co]
 *.so
 *.pyd
 cython/ragnaroc.c
 cython/ragnaroc.html
 cython/build/
-
-# Local storage (SQLite database)
-data/
-
-ignore
-*.csv
-*.log
-.DS_Store
-
-# Environments
-.env
-.venv
-env/
+.venv/
 venv/
-ENV/
-env.bak/
-venv.bak/
-vv
 
-# IDE
-.idea/*
-.vscode/*
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-pages/__pycache__/
-# *.py[cod]
-*.py[co]
-*$py.class
-.mypy_cache/
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Distribution / packaging
-.Python
-build/
-dash/deps/
-dash/html/*
-!dash/html/.gitkeep
-dash/dcc/*
-!dash/dcc/.gitkeep
-dash/dash_table/*
-!dash/dash_table/.gitkeep
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-node_modules/
-.npm
-npm-debug*
-
-dash_generator_test_component_standard/
-dash_generator_test_component_nested/
-dash_test_components/
-dash_generator_test_component_typescript/
-inst/
-man/
-R/
-# web app (v2)
+# web app
 web/node_modules/
 web/dist/
+npm-debug*
+
+# leftovers from the retired Dash app (local caches)
+data/
+file_system_backend/

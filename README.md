@@ -1,22 +1,28 @@
-# RAGNAROC-UI
+# Ragnaroc
 
 An interactive simulator for the RAGNAROC model of reflexive visual attention
-(Wyble et al.). Describe a small visual experiment — what appears, where, and
-when — and watch the model predict how attention deploys across the visual
-field, down to the simulated N2pc EEG component.
+([Wyble et al., 2020](https://psycnet.apa.org/record/2020-58898-001)).
+Describe a small visual experiment, what appears, where, and when, and watch
+the model predict how attention deploys across the visual field millisecond by
+millisecond, down to the simulated N2pc EEG component.
 
-There are two apps in this repository:
+The app runs entirely in the browser: the model is a TypeScript port of the
+reference implementation, executed in a Web Worker, so every change
+re-simulates in a few hundred milliseconds and nothing is uploaded anywhere.
 
-| | Where | Status |
-|---|---|---|
-| **v2 — browser-native** (recommended) | [`web/`](web/) | The model runs *in your browser* (TypeScript port, verified against the reference). Live re-simulation on every change, interactive canvas, shareable links. Deploys as a static site. |
-| v1 — Dash | [`application.py`](application.py), [`callbacks/`](callbacks/), [`pages/`](pages/) | Python/Dash app driving the compiled Cython model. Kept for reference; see [docs/ROADMAP.md](docs/ROADMAP.md) for the plan to retire it. |
+Live site: https://dhevarghese.github.io/RAGNAROC-UI/
 
-The scientific reference implementation of the model stays in Python:
-[`cython/ragnaroc.pyx`](cython/ragnaroc.pyx) (compiled) and
-[`ragnaroc_vanilla.py`](ragnaroc_vanilla.py) (pure Python, for reading).
+## Repository layout
 
-## v2 — run it locally
+| Path | What |
+|---|---|
+| [`web/`](web/) | The app: Vite + React + TypeScript, no other runtime dependencies. `web/src/model/ragnaroc.ts` is the model port. |
+| [`cython/`](cython/) | The scientific reference implementation of the model in Cython (`ragnaroc.pyx`). The port is verified against it. |
+| [`scripts/export_reference.py`](scripts/export_reference.py) | Runs the compiled reference model on a few experiments and writes the fixtures the port is tested against. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Why the app is browser-native and what came before. |
+| [`.github/workflows/web.yml`](.github/workflows/web.yml) | CI: typecheck, tests, build, deploy to GitHub Pages. |
+
+## Run it locally
 
 Requires Node 20+.
 
@@ -24,31 +30,38 @@ Requires Node 20+.
 cd web && npm install && npm run dev
 ```
 
-Then open http://localhost:5173. `npm test` runs the differential test that
-pins the TypeScript model to fixtures exported from the compiled Cython model
-(`scripts/export_reference.py`); `npm run build` produces the static site in
-`web/dist/`. Pushes to `main` build, test, and publish it to GitHub Pages via
-[`.github/workflows/web.yml`](.github/workflows/web.yml) (enable Pages with
-source "GitHub Actions" in the repository settings once).
+Open http://localhost:5173. Other commands, all from `web/`:
 
-## v1 — run the Dash app locally
+- `npm test` runs the unit tests, including the differential test that pins
+  the TypeScript model to fixtures exported from the reference model.
+- `npm run typecheck` runs the TypeScript compiler.
+- `npm run build` produces the static site in `web/dist/`.
 
-Requires Python 3.12 and a C compiler.
+## Deploy
 
-```bash
-pip install -r requirements.txt -r requirements-build.txt
-cd cython && python setup.py build_ext --inplace && mv ragnaroc.*.so .. && cd ..
-python application.py
-```
+Every push to `main` that touches `web/` builds, tests and publishes the site
+to GitHub Pages through GitHub Actions. One-time setup: repository Settings,
+Pages, Source: "GitHub Actions". The build is served from `/<repo>/`, which
+the workflow passes in as `VITE_BASE`.
 
-Serves at http://localhost:8050. Saved experiments go to a local SQLite database
-at `data/ragnaroc.db`. Environment: `RAGNAROC_DEBUG=1` enables Dash debug mode,
-`PORT` overrides the port, `RAGNAROC_STORAGE=dynamo` (with standard AWS
-credentials in the environment) switches persistence to DynamoDB.
+## Changing the model
+
+The reference model lives in [`cython/ragnaroc.pyx`](cython/ragnaroc.pyx).
+To change it and keep the app in sync:
+
+1. Edit `cython/ragnaroc.pyx`.
+2. Build it (Python 3.10+, a C compiler):
+   ```bash
+   pip install -r requirements.txt
+   cd cython && python setup.py build_ext --inplace && mv ragnaroc.*.so .. && cd ..
+   ```
+3. Re-export the fixtures: `python scripts/export_reference.py`.
+4. Port the change to `web/src/model/ragnaroc.ts`. `npm test` in `web/` tells
+   you when the two agree again (single-precision constants matter: every
+   `cdef float` in the reference is a `Math.fround(...)` in the port).
 
 ## Contributing
 
-Fork, branch, change, pull-request. For model changes, edit
-`cython/ragnaroc.pyx`, rebuild, re-export the fixtures with
-`python scripts/export_reference.py`, and port the change to
-`web/src/model/ragnaroc.ts` — `npm test` will tell you when the two agree.
+Fork, branch, change, pull request. UI copy avoids em dashes and bold inside
+prose; the app has no runtime dependencies beyond React, and we would like to
+keep it that way.
