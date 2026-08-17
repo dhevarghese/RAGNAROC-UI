@@ -12,6 +12,8 @@ interface Props {
   height: number
   probe?: { x: number; y: number } | null
   markers?: { x: number; y: number; color: string; active: boolean; label: string }[]
+  /** pinned probes: numbered squares on the surface */
+  pins?: { x: number; y: number; color: string; label: string }[]
   onPick?: (x: number, y: number) => void
   title: string
   subtitle?: string
@@ -25,7 +27,7 @@ interface Props {
  * shading, colour from the shared activation colormap. Drag to orbit, click
  * to move the probe. No WebGL, no dependencies, ~2 ms per frame at 27×27.
  */
-export function Surface3D({ data, w, h, step, width, height, probe, markers, onPick, title, subtitle, range = FIXED_RANGE }: Props) {
+export function Surface3D({ data, w, h, step, width, height, probe, markers, pins, onPick, title, subtitle, range = FIXED_RANGE }: Props) {
   const ACT_MIN = range.min, ACT_MAX = range.max
   const [hover, setHover] = useState<number>(-1) // cell index under the pointer, -1 when none
   const ref = useRef<HTMLCanvasElement>(null)
@@ -165,6 +167,24 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
         ctx.fillText(m.label, tx, ty - 8)
       }
     }
+    if (pins) {
+      for (const p of pins) {
+        const x = p.x - 1, y = p.y - 1
+        if (x < 0 || y < 0 || x >= w || y >= h) continue
+        const [sx, sy] = project(worldX(x + 0.5), worldY(y + 0.5), worldZ(val(x, y)))
+        ctx.fillStyle = 'rgba(0,0,0,0.7)'
+        ctx.fillRect(sx - 6, sy - 6, 12, 12)
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = 1.5
+        ctx.strokeRect(sx - 6, sy - 6, 12, 12)
+        ctx.fillStyle = p.color
+        ctx.font = '600 9px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(p.label, sx, sy + 0.5)
+        ctx.textBaseline = 'alphabetic'
+      }
+    }
     if (probe) {
       const x = Math.min(w, probe.x) - 1, y = Math.min(h, probe.y) - 1
       const [sx, sy] = project(worldX(x + 0.5), worldY(y + 0.5), worldZ(val(x, y)))
@@ -182,7 +202,7 @@ export function Surface3D({ data, w, h, step, width, height, probe, markers, onP
     const [mx, my] = project(worldX(w + 1.8), worldY(h / 2), 0); ctx.fillText('y ↓', mx, my)
     const [zx, zy] = project(worldX(-1.5), worldY(-1), worldZ(ACT_MAX)); ctx.fillText(fmt(ACT_MAX), zx, zy)
     const [z0x, z0y] = project(worldX(-1.5), worldY(-1), 0); ctx.fillText(fmt(ACT_MIN), z0x, z0y)
-  }, [data, w, h, step, width, height, azimuth, elevation, probe, markers, ACT_MIN, ACT_MAX])
+  }, [data, w, h, step, width, height, azimuth, elevation, probe, markers, pins, ACT_MIN, ACT_MAX])
 
   const nearest = (px: number, py: number) => {
     const c = centersRef.current

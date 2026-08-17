@@ -13,6 +13,8 @@ interface Props {
   /** highlighted cell (1-based x, y) */
   probe?: { x: number; y: number } | null
   markers?: { x: number; y: number; color: string; active: boolean }[]
+  /** pinned probes: small numbered squares */
+  pins?: { x: number; y: number; color: string; label: string }[]
   onPick?: (x: number, y: number) => void
   title: string
   subtitle?: string
@@ -24,7 +26,7 @@ interface Props {
  * One activation map at one time step, drawn pixel-per-cell into an offscreen
  * ImageData and scaled up with crisp edges. Click to move the probe.
  */
-export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title, subtitle, range = FIXED_RANGE }: Props) {
+export function Heatmap({ data, w, h, step, size, probe, markers, pins, onPick, title, subtitle, range = FIXED_RANGE }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
   const imgRef = useRef<ImageData | null>(null)
@@ -70,6 +72,24 @@ export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title,
         ctx.setLineDash([])
       }
     }
+    // pinned probes
+    if (pins) {
+      for (const p of pins) {
+        if (p.x < 1 || p.y < 1 || p.x > w || p.y > h) continue
+        const x0 = (p.x - 1) * cell, y0 = (p.y - 1) * cell
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = 1.5
+        ctx.strokeRect(x0 + 0.75, y0 + 0.75, cell - 1.5, cell - 1.5)
+        if (cell >= 9) {
+          ctx.fillStyle = p.color
+          ctx.font = `600 ${Math.max(8, Math.min(11, cell * 0.8))}px system-ui, sans-serif`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(p.label, x0 + cell / 2, y0 + cell / 2 + 0.5)
+          ctx.textBaseline = 'alphabetic'
+        }
+      }
+    }
     // probe crosshair
     if (probe) {
       const px = (probe.x - 1) * cell
@@ -81,7 +101,7 @@ export function Heatmap({ data, w, h, step, size, probe, markers, onPick, title,
       ctx.lineWidth = 0.5
       ctx.strokeRect(px + 2, py + 2, cell - 4, cell - 4)
     }
-  }, [data, w, h, step, size, probe, markers, range])
+  }, [data, w, h, step, size, probe, markers, pins, range])
 
   const cell = size / w
   const cellAt = (e: React.PointerEvent | React.MouseEvent) => {

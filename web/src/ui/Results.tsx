@@ -26,6 +26,9 @@ const SPEEDS = [0.25, 0.5, 1, 2, 4]
 const MS_PER_STEP = 8
 const PLAY_KEY = 'ragnaroc.playback'
 
+const PIN_COLORS = ['#ffffff', '#7ee787', '#c792ea', '#48dbfb', '#ffa657', '#ff9ff3']
+const MAX_PINS = PIN_COLORS.length
+
 const MAP_INFO: Record<string, { title: string; blurb: string }> = {
   AM: { title: 'Attention map', blurb: 'Where attention is deployed. Above threshold (14) it amplifies input to the LV maps.' },
   IG: { title: 'Inhibitory gate', blurb: 'Driven by LV and by AM itself; when it crosses 8 it suppresses the attention map.' },
@@ -47,6 +50,8 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     try { return { speed: 1, loop: true, ...JSON.parse(localStorage.getItem(PLAY_KEY) ?? '{}') } } catch { return { speed: 1, loop: true } }
   })
   const [autoRange, setAutoRange] = useState(false)
+  // pinned probes: extra locations whose AM/IG traces are compared side by side
+  const [pins, setPins] = useState<{ x: number; y: number }[]>([])
   const [mapSize, setMapSize] = useState(148)
   const [sel, setSel] = useState<MapSel>({ kind: 'AM', stim: 0 })
   const [surfaceW, setSurfaceW] = useState(560)
@@ -139,6 +144,26 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
     for (let t = 0; t < steps; t++) out[t] = data[t * n + probeIndex]
     return out
   }
+
+  const visiblePins = pins.filter((p) => p.x >= 1 && p.y >= 1 && p.x <= w && p.y <= h)
+  const pinMarks = visiblePins.map((p, i) => ({ ...p, color: PIN_COLORS[i % PIN_COLORS.length], label: String(i + 1) }))
+  const isPinned = pins.some((p) => p.x === px && p.y === py)
+  const pinCurrent = () => { if (!isPinned && pins.length < MAX_PINS) setPins([...pins, { x: px, y: py }]) }
+  const unpin = (i: number) => setPins(pins.filter((_, k) => k !== i))
+
+  const pinKey = visiblePins.map((p) => `${p.x},${p.y}`).join(';')
+  const pinTraces = useMemo(() => {
+    const at = (data: Float32Array, x: number, y: number) => {
+      const idx = (y - 1) * w + (x - 1)
+      const out = new Float32Array(steps)
+      for (let t = 0; t < steps; t++) out[t] = data[t * n + idx]
+      return out
+    }
+    const am: Trace[] = visiblePins.map((p, i) => ({ label: `${i + 1} AM (${p.x}, ${p.y})`, color: PIN_COLORS[i % PIN_COLORS.length], values: at(result.AM.data, p.x, p.y) }))
+    const ig: Trace[] = visiblePins.map((p, i) => ({ label: `${i + 1} IG (${p.x}, ${p.y})`, color: PIN_COLORS[i % PIN_COLORS.length], values: at(result.IG.data, p.x, p.y), dashed: true }))
+    return { am, ig }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, pinKey])
 
   const stimNames = experiment.stimulusTypes.map((s) => s.name)
   const traces = useMemo(() => {
@@ -245,7 +270,7 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             subtitle={`${probeVal(selData).toFixed(1)} at probe`}
             data={selData} w={w} h={h} step={clampedStep}
             width={surfaceW} height={Math.round(surfaceW * 0.62)}
-            probe={{ x: px, y: py }} markers={surfaceMarkers} onPick={pick}
+            probe={{ x: px, y: py }} markers={surfaceMarkers} pins={pinMarks} onPick={pick}
             range={selRange}
           />
           <div className="legend legend-inline">
@@ -270,17 +295,17 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
             <span className="help">click a map to feature it in 3D and move the probe</span>
           </div>
           <div className="maps-row">
-            <div className={`thumb${isSel('AM') ? ' active' : ''}`}><Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} range={rangeOf('AM')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('AM')} /></div>
-            <div className={`thumb${isSel('IG') ? ' active' : ''}`}><Heatmap title={MAP_INFO.IG.title} subtitle={`${probeVal(result.IG.data).toFixed(1)} at probe`} data={result.IG.data} range={rangeOf('IG')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('IG')} /></div>
+            <div className={`thumb${isSel('AM') ? ' active' : ''}`}><Heatmap title={MAP_INFO.AM.title} subtitle={`${probeVal(result.AM.data).toFixed(1)} at probe`} data={result.AM.data} range={rangeOf('AM')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} pins={pinMarks} onPick={pickAndSelect('AM')} /></div>
+            <div className={`thumb${isSel('IG') ? ' active' : ''}`}><Heatmap title={MAP_INFO.IG.title} subtitle={`${probeVal(result.IG.data).toFixed(1)} at probe`} data={result.IG.data} range={rangeOf('IG')} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} pins={pinMarks} onPick={pickAndSelect('IG')} /></div>
           </div>
           {experiment.stimulusTypes.map((s, i) => (
             <div className="maps-row" key={s.id}>
               <div className="maps-row-label" style={{ color: stimColor(i) }}>
                 <span className="swatch" style={{ background: stimColor(i) }} />{s.name}
               </div>
-              <div className={`thumb${isSel('EV', i) ? ' active' : ''}`}><Heatmap title="Early visual" data={result.EV[i].data} range={rangeOf('EV', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('EV', i)} /></div>
-              <div className={`thumb${isSel('LV', i) ? ' active' : ''}`}><Heatmap title="Late visual" data={result.LV[i].data} range={rangeOf('LV', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('LV', i)} /></div>
-              <div className={`thumb${isSel('II', i) ? ' active' : ''}`}><Heatmap title="Inhib. interneurons" data={result.II[i].data} range={rangeOf('II', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} onPick={pickAndSelect('II', i)} /></div>
+              <div className={`thumb${isSel('EV', i) ? ' active' : ''}`}><Heatmap title="Early visual" data={result.EV[i].data} range={rangeOf('EV', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} pins={pinMarks} onPick={pickAndSelect('EV', i)} /></div>
+              <div className={`thumb${isSel('LV', i) ? ' active' : ''}`}><Heatmap title="Late visual" data={result.LV[i].data} range={rangeOf('LV', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} pins={pinMarks} onPick={pickAndSelect('LV', i)} /></div>
+              <div className={`thumb${isSel('II', i) ? ' active' : ''}`}><Heatmap title="Inhib. interneurons" data={result.II[i].data} range={rangeOf('II', i)} w={w} h={h} step={clampedStep} size={mapSize} probe={{ x: px, y: py }} markers={markers} pins={pinMarks} onPick={pickAndSelect('II', i)} /></div>
             </div>
           ))}
         </div>
@@ -289,8 +314,27 @@ export function Results({ experiment, result, step, setStep, probe, setProbe, se
       <div className="traces">
         <header className="traces-head">
           <h3>Time course at probe <span className="mono">({px}, {py})</span></h3>
+          <div className="pin-bar">
+            <button className="btn small" onClick={pinCurrent} disabled={isPinned || pins.length >= MAX_PINS}
+              title={isPinned ? 'This cell is already pinned' : pins.length >= MAX_PINS ? `Up to ${MAX_PINS} pins` : 'Keep this location to compare it with others'}>
+              📌 pin this probe
+            </button>
+            {pinMarks.map((p, i) => (
+              <span key={i} className="pin-chip" style={{ borderColor: p.color }}>
+                <button className="pin-jump" style={{ color: p.color }} onClick={() => pick(p.x, p.y)} title="Move the probe here">{p.label} ({p.x}, {p.y})</button>
+                <button className="icon-btn" onClick={() => unpin(pins.indexOf(visiblePins[i]))} title="unpin" aria-label={`unpin ${p.label}`}>×</button>
+              </span>
+            ))}
+            {pins.length > 0 && <button className="btn small" onClick={() => setPins([])}>clear</button>}
+          </div>
           <span className="muted small">bands = when objects are on screen</span>
         </header>
+        {pinMarks.length > 0 && (
+          <div className="pin-compare">
+            <h4>Pinned probes compared <span className="muted small">(AM solid, IG dashed)</span></h4>
+            <TraceChart traces={[...pinTraces.am, ...pinTraces.ig]} step={clampedStep} steps={steps} yMin={ACT_MIN} yMax={ACT_MAX} height={130} zeroLine yLabel="pins" onScrub={(s) => { setPlaying(false); setStep(s) }} bands={bands} />
+          </div>
+        )}
         <TraceChart traces={traces.shared} step={clampedStep} steps={steps} yMin={ACT_MIN} yMax={ACT_MAX} height={120} zeroLine yLabel="AM, IG" onScrub={(s) => { setPlaying(false); setStep(s) }} bands={bands} />
         {traces.perStim.map((tr, i) => (
           <TraceChart key={i} traces={tr} step={clampedStep} steps={steps} yMin={ACT_MIN} yMax={ACT_MAX} height={110} zeroLine yLabel={stimNames[i]} onScrub={(s) => { setPlaying(false); setStep(s) }} bands={bands} />

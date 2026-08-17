@@ -39,6 +39,7 @@ export function TraceChart({ traces, step, steps, yMin, yMax, height, zeroLine, 
     if (!canvas || !wrap) return
     const draw = () => {
       const width = wrap.clientWidth
+      if (width <= 0) return
       const dpr = window.devicePixelRatio || 1
       canvas.width = width * dpr
       canvas.height = height * dpr
@@ -121,17 +122,6 @@ export function TraceChart({ traces, step, steps, yMin, yMax, height, zeroLine, 
       ctx.moveTo(cx, padT)
       ctx.lineTo(cx, padT + ih)
       ctx.stroke()
-      // legend
-      let lx = padL + 6
-      ctx.textAlign = 'left'
-      ctx.font = '10.5px system-ui, sans-serif'
-      for (const tr of traces) {
-        ctx.fillStyle = tr.color
-        ctx.fillRect(lx, padT + 4, 10, 2.5)
-        ctx.fillStyle = 'rgba(255,255,255,0.75)'
-        ctx.fillText(tr.label, lx + 14, padT + 6)
-        lx += 14 + ctx.measureText(tr.label).width + 12
-      }
     }
     draw()
     const ro = new ResizeObserver(draw)
@@ -147,22 +137,40 @@ export function TraceChart({ traces, step, steps, yMin, yMax, height, zeroLine, 
     onScrub(Math.round(Math.min(steps - 1, Math.max(0, t))))
   }
 
+  const at = Math.min(step, steps - 1)
   return (
-    <div ref={wrapRef} className="trace-wrap">
-      <canvas
-        ref={ref}
-        style={{ cursor: onScrub ? 'ew-resize' : 'default', display: 'block' }}
-        onPointerDown={(e) => {
-          if (!onScrub) return
-          e.currentTarget.setPointerCapture(e.pointerId)
-          scrubFromEvent(e)
-        }}
-        onPointerMove={(e) => {
-          if (onScrub && e.buttons & 1) scrubFromEvent(e)
-        }}
-      />
+    <div className="trace-row">
+      <div ref={wrapRef} className="trace-wrap">
+        <canvas
+          ref={ref}
+          style={{ cursor: onScrub ? 'ew-resize' : 'default', display: 'block' }}
+          onPointerDown={(e) => {
+            if (!onScrub) return
+            e.currentTarget.setPointerCapture(e.pointerId)
+            scrubFromEvent(e)
+          }}
+          onPointerMove={(e) => {
+            if (onScrub && e.buttons & 1) scrubFromEvent(e)
+          }}
+        />
+      </div>
+      {/* legend lives outside the canvas so many traces never cover the data; shows the value at the cursor */}
+      <ul className="trace-legend" aria-label="legend">
+        {traces.map((tr, i) => (
+          <li key={i} title={tr.label}>
+            <span className={`trace-swatch${tr.dashed ? ' dashed' : ''}`} style={{ borderColor: tr.color }} />
+            <span className="trace-label">{tr.label}</span>
+            <span className="trace-value">{fmtVal(tr.values[at])}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
+}
+
+function fmtVal(v: number | undefined) {
+  if (v === undefined || !Number.isFinite(v)) return ''
+  return Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2)
 }
 
 function fmt(v: number) {
