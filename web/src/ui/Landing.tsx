@@ -32,7 +32,7 @@ export function Landing({ onOpen, resumeName }: Props) {
           Describe a small visual experiment: what can appear, where, and when. The{' '}
           <a href={PAPER_URL} target="_blank" rel="noreferrer">RAGNAROC model (Wyble et al., 2020)</a>{' '}
           predicts how attention deploys across the visual field millisecond by millisecond, down to
-          the simulated N2pc EEG component. Everything runs locally; nothing is uploaded.
+          the simulated N2pc EEG component. Everything runs locally.
         </p>
         <div className="landing-cta">
           <button className="btn primary big" onClick={() => onOpen()}>

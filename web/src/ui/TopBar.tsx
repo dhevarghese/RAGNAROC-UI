@@ -91,17 +91,24 @@ export function TopBar({ experiment, dispatch, undoState, status, onGuide, onHom
 
       <div className="status" aria-live="polite">
         {status.problems.length > 0 ? (
-          <span className="status-pill warn" title={status.problems.join('\n')}>⚠ {status.problems[0]}</span>
+          <span className="state warn" title={status.problems.join('\n')}>
+            <span className="state-dot" /> Can't run: {status.problems[0]}
+          </span>
         ) : status.error ? (
-          <span className="status-pill error">✕ {status.error}</span>
+          <span className="state error"><span className="state-dot" /> Failed: {status.error}</span>
         ) : status.running ? (
-          <span className="status-pill running">
-            <span className="spinner" /> simulating {status.progress != null ? `${Math.round(status.progress * 100)}%` : ''}
+          <span className="state running">
+            <span className="state-dot" /> Simulating
+            <span className="mono">{status.progress != null ? ` ${Math.round(status.progress * 100)}%` : ''}</span>
           </span>
         ) : (
-          <span className="status-pill ok">● live</span>
+          <span className="state ok" title={status.elapsedMs != null ? `Last run took ${status.elapsedMs.toFixed(0)} ms` : undefined}>
+            <span className="state-dot" /> Up to date
+          </span>
         )}
       </div>
+      {/* thin progress bar along the bottom edge of the bar while a run is in flight */}
+      <div className={`run-progress${status.running ? ' on' : ''}`} style={{ width: `${Math.round((status.progress ?? 0) * 100)}%` }} aria-hidden />
 
       <nav className="actions">
         <div className="undo-group">
