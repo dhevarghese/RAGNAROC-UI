@@ -337,7 +337,7 @@ def saveModal():
             dbc.ModalBody(
                 children=[
                     html.P("Whose experiment is this? Saved experiments are grouped by creator name so you can load them back later."),
-                    dcc.Input(id="exp-creator-name", placeholder='Your name', type='text', value=""),
+                    dcc.Input(id="exp-creator-name", className="text-field", placeholder='Your name', type='text', value=""),
                     dbc.Button("Save", id="save-creator-exp", n_clicks=0, className="sl-button"),
                 ],
                 className="sl-modal-body",
@@ -379,7 +379,7 @@ def loadModal():
             dbc.ModalBody(
                 children=[
                     html.P("Enter the creator name the experiment was saved under, then pick it from the list."),
-                    dcc.Input(id="load-exps-creator", placeholder='Creator name', type='text', value="", debounce=True),
+                    dcc.Input(id="load-exps-creator", className="text-field", placeholder='Creator name', type='text', value="", debounce=True),
                     dcc.Dropdown(options=[], value=None, id='loaded-exps-dropdown', placeholder="Saved experiments…", className="load-dropdown"),
                     dbc.Button("Load", id="load-creator-exp", n_clicks=0, className="sl-button"),
                 ],

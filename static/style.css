@@ -199,7 +199,11 @@ html, body {
 
 .field-help { color: var(--text-dim); font-size: 0.85rem; margin: 0.3rem 0 0; }
 
+/* dcc.Input renders a wrapper element; .text-field styles the wrapper as the
+   visible box and the inner input stretches to fill it. */
 .text-field {
+    display: flex;
+    align-items: center;
     width: 100%;
     box-sizing: border-box;
     background-color: var(--panel-raised);
@@ -211,15 +215,44 @@ html, body {
     font-size: 0.95rem;
 }
 
-.text-field:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.text-field input,
+.text-field .dash-input-element {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+}
+
+.text-field:focus-within { outline: 2px solid var(--accent); border-color: transparent; }
+
+/* Dash 4 number-input stepper buttons default to white pills */
+.dash-input-stepper {
+    background-color: var(--panel-raised);
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    border-radius: 0.3rem;
+}
+
+.dash-input-stepper:hover {
+    background-color: var(--panel-raised);
+    color: var(--accent);
+    border-color: var(--accent);
+}
 
 .weight-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
 
-.weight-field { width: 5.5rem; text-align: center; }
+.weight-field { width: 7.5rem; flex: 0 0 auto; }
+
+.weight-field input { text-align: center; }
 
 .field-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
     gap: 0.3rem 1rem;
 }
 
@@ -247,14 +280,15 @@ html, body {
 
 .run-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
-    gap: 2rem;
+    gap: 1.2rem 2rem;
     margin-top: 1.4rem;
     padding-top: 1.4rem;
     border-top: 1px solid var(--line);
 }
 
-.run-name { flex: 1; max-width: 26rem; }
+.run-name { flex: 1 1 16rem; max-width: 26rem; min-width: 14rem; }
 
 .run-btn { font-weight: 700; color: var(--accent-ink); }
 
@@ -338,14 +372,6 @@ html, body {
     gap: 0.8rem;
 }
 
-.sl-modal-body input[type="text"] {
-    background-color: var(--panel-raised);
-    color: var(--text);
-    border: 1px solid var(--line);
-    border-radius: 0.45rem;
-    padding: 0.5rem 0.7rem;
-}
-
 .sl-button {
     color: var(--accent-ink);
     background-color: var(--accent);
@@ -383,47 +409,75 @@ html, body {
     margin: 0;
 }
 
-/* dcc.Dropdown dark theme
+/* dcc.Dropdown (Dash 4 "dash-dropdown" component) dark theme
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
-.Select.has-value.Select--single > .Select-control .Select-value .Select-value-label,
-.Select.has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
+button.dash-dropdown {
+    width: 100%;
+    background-color: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 0.45rem;
+    color: var(--text);
+    padding: 0.45rem 0.6rem;
+    text-align: left;
+}
+
+button.dash-dropdown:focus-visible { outline: 2px solid var(--accent); }
+
+.dash-dropdown-value, .dash-dropdown-value-item { color: var(--text); }
+
+.dash-dropdown-placeholder { color: var(--text-dim); }
+
+.dash-dropdown-clear, .dash-dropdown-clear svg,
+button.dash-dropdown svg { color: var(--text-dim); }
+
+input.dash-dropdown-focus-target { background: transparent; }
+
+/* The options popover */
+.dash-dropdown-content {
+    background-color: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 0.45rem;
+    color: var(--text);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dash-dropdown-search-container { background-color: var(--panel-raised); }
+
+input.dash-dropdown-search { color: var(--text); }
+
+input.dash-dropdown-search::placeholder { color: var(--text-dim); }
+
+.dash-dropdown-search-container svg { color: var(--text-dim); }
+
+.dash-options-list-option, .dash-dropdown-option {
     color: var(--text) !important;
 }
 
-.Select-control, .Select-multi-value-wrapper, .Select-menu-outer div {
-    background-color: var(--panel-raised);
-}
-
-.Select-control, .Select, .Select-value-label, .Select-clear-zone {
-    color: var(--text) !important;
-}
-
-.Select-menu-outer {
-    background-color: var(--panel-raised);
-    border: 1px solid var(--line) !important;
-}
-
-.Select-menu-outer div:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+.dash-options-list-option:hover, .dash-dropdown-option:hover {
+    background-color: rgba(255, 255, 255, 0.07);
     cursor: pointer;
 }
 
-.Select--single > .Select-control .Select-value, .Select-placeholder {
-    border: 1px solid var(--line);
-    border-radius: 0.45rem;
-    color: var(--text-dim);
+.dash-options-list-option.selected, .dash-dropdown-option.selected {
+    background-color: rgba(252, 205, 97, 0.14);
+}
+
+/* dbc.Input (Bootstrap form-control) dark theme
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+.form-control {
     background-color: var(--panel-raised);
+    color: var(--text);
+    border: 1px solid var(--line);
 }
 
-.Select-arrow { border-color: var(--text-dim) transparent transparent; }
-
-.Select-arrow-zone:hover > .Select-arrow, .is-open .Select-arrow {
-    border-color: white transparent transparent;
+.form-control:focus {
+    background-color: var(--panel-raised);
+    color: var(--text);
+    border-color: var(--accent);
+    box-shadow: none;
 }
 
-.Select-arrow-zone, .Select-clear-zone, .is-open > .Select-control {
-    background-color: var(--panel-raised) !important;
-}
+.form-control::placeholder { color: var(--text-dim); }
 
 /* Sliders
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
@@ -432,6 +486,24 @@ html, body {
 .rc-slider-track { background-color: var(--accent) !important; }
 
 .rc-slider-handle { border: solid 2px var(--accent) !important; }
+
+.rc-slider-tooltip-inner {
+    background-color: var(--panel-raised) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--line);
+}
+
+.rc-slider-tooltip-arrow { border-bottom-color: var(--panel-raised) !important; }
+
+/* Dash 4 slider's attached value box defaults to white-on-white */
+input.dash-range-slider-input {
+    background-color: var(--panel-raised) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--line);
+    border-radius: 0.3rem;
+    min-width: 3rem;
+    text-align: center;
+}
 
 .slider-margin { margin-top: 0.3rem; }
 
