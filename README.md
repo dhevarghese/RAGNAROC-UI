@@ -19,7 +19,6 @@ Live site: https://dhevarghese.github.io/RAGNAROC-UI/
 | [`web/`](web/) | The app: Vite + React + TypeScript, no other runtime dependencies. `web/src/model/ragnaroc.ts` is the model port. |
 | [`cython/`](cython/) | The scientific reference implementation of the model in Cython (`ragnaroc.pyx`). The port is verified against it. |
 | [`scripts/export_reference.py`](scripts/export_reference.py) | Runs the compiled reference model on a few experiments and writes the fixtures the port is tested against. |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Why the app is browser-native and what came before. |
 | [`.github/workflows/web.yml`](.github/workflows/web.yml) | CI: typecheck, tests, build, deploy to GitHub Pages. |
 
 ## Run it locally
