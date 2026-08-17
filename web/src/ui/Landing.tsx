@@ -6,12 +6,15 @@ interface Props {
   onOpen: (experiment?: Experiment) => void
 }
 
+const PAPER_URL = 'https://psycnet.apa.org/record/2020-58898-001'
+const PREPRINT_URL = 'https://www.biorxiv.org/content/10.1101/406124v4'
+
 const MAPS = [
-  ['Early visual (EV)', 'The stimulus signal on the input layer — what is physically on screen, per stimulus type.'],
+  ['Early visual (EV)', 'The stimulus signal on the input layer: what is physically on screen, per stimulus type.'],
   ['Late visual (LV)', 'EV filtered through receptive fields and amplified wherever attention is deployed.'],
   ['Attention map (AM)', 'Where attention is. Driven by LV weighted by task relevance; above threshold it boosts LV in return.'],
   ['Inhibitory gate (IG)', 'The brake: excited by LV and by AM itself, it suppresses the attention map once it crosses threshold.'],
-  ['Inhibitory interneurons (II)', 'Local inhibition that pushes back on LV once it fires — keeps the system from running away.'],
+  ['Inhibitory interneurons (II)', 'Local inhibition that pushes back on LV once it fires, keeping the system from running away.'],
   ['N2pc', 'A simulated EEG component: attentional excitation minus inhibition, left hemifield minus right. The lab\'s bridge to real data.'],
 ]
 
@@ -22,12 +25,12 @@ export function Landing({ onOpen }: Props) {
       <header className="landing-hero">
         <img src="./logo.png" alt="" className="landing-logo" />
         <h1>Ragnaroc</h1>
-        <p className="landing-tag">A simulator for reflexive visual attention — in your browser.</p>
+        <p className="landing-tag">A simulator for reflexive visual attention that runs in your browser.</p>
         <p className="landing-lede">
-          Describe a small visual experiment: what can appear, where, and when. The RAGNAROC model
-          (Wyble et al.) predicts how attention deploys across the visual field millisecond by
-          millisecond — down to the simulated N2pc EEG component. Everything runs locally; nothing
-          is uploaded.
+          Describe a small visual experiment: what can appear, where, and when. The{' '}
+          <a href={PAPER_URL} target="_blank" rel="noreferrer">RAGNAROC model (Wyble et al., 2020)</a>{' '}
+          predicts how attention deploys across the visual field millisecond by millisecond, down to
+          the simulated N2pc EEG component. Everything runs locally; nothing is uploaded.
         </p>
         <div className="landing-cta">
           <button className="btn primary big" onClick={() => onOpen()}>Open the simulator</button>
@@ -42,9 +45,9 @@ export function Landing({ onOpen }: Props) {
             <span className="step-num">1</span>
             <div>
               <h3>Define stimulus types</h3>
-              <p>A stimulus type is a kind of thing that can appear — a target, a distractor. Give each a
-                <b> bottom-up</b> weight (how physically salient it is) and a <b>top-down</b> weight (how
-                relevant it is to the task), both from 0 to 1.</p>
+              <p>A stimulus type is a kind of thing that can appear, such as a target or a distractor. Give
+                each a <b>bottom-up</b> weight (how physically salient it is) and a <b>top-down</b> weight
+                (how relevant it is to the task), both from 0 to 1.</p>
             </div>
           </li>
           <li>
@@ -59,9 +62,9 @@ export function Landing({ onOpen }: Props) {
           <li>
             <span className="step-num">3</span>
             <div>
-              <h3>Watch it simulate — live</h3>
+              <h3>Watch it simulate, live</h3>
               <p>There is no run button. Every change re-runs the model in a background thread in a few
-                hundred milliseconds. Drag a weight and watch attention move.</p>
+                hundred milliseconds. Set a weight and watch attention move.</p>
             </div>
           </li>
           <li>
@@ -91,7 +94,7 @@ export function Landing({ onOpen }: Props) {
 
       <section className="landing-section">
         <h2>What you'll be looking at</h2>
-        <p className="landing-lede">The model is a stack of interacting topographic maps. Each one is a grid the size of the visual field.</p>
+        <p className="section-lede">The model is a stack of interacting topographic maps. Each one is a grid the size of the visual field.</p>
         <dl className="map-cards">
           {MAPS.map(([t, d]) => (
             <div key={t} className="map-card"><dt>{t}</dt><dd>{d}</dd></div>
@@ -108,8 +111,8 @@ export function Landing({ onOpen }: Props) {
           correlates such as the N2pc and P<sub>D</sub> components of the EEG.
         </p>
         <p className="landing-links">
-          <a href="https://www.biorxiv.org/content/10.1101/406124v4" target="_blank" rel="noreferrer">Preprint (bioRxiv)</a>
-          <a href="https://psycnet.apa.org/record/2020-58898-001" target="_blank" rel="noreferrer">Psychological Review</a>
+          <a href={PREPRINT_URL} target="_blank" rel="noreferrer">Preprint (bioRxiv)</a>
+          <a href={PAPER_URL} target="_blank" rel="noreferrer">Psychological Review</a>
           <a href="https://github.com/dhevarghese/RAGNAROC-UI" target="_blank" rel="noreferrer">Source on GitHub</a>
         </p>
         <p className="muted small">The simulator is a TypeScript port of the reference Cython model, verified against it to floating-point precision on every build.</p>

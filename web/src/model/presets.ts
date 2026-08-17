@@ -23,7 +23,7 @@ export const PRESETS: Preset[] = [
   {
     key: 'single',
     title: 'One lasting object',
-    description: 'A modestly salient object stays on for 500 ms — attention builds slowly, then inhibition catches up.',
+    description: 'A modestly salient object stays on for 500 ms. Attention builds slowly, then inhibition catches up.',
     experiment: {
       ...base, name: 'Single',
       stimulusTypes: [{ id: 'T', name: 'target', td: 0.18, bu: 0.15 }],
@@ -49,7 +49,7 @@ export const PRESETS: Preset[] = [
   {
     key: 'diff',
     title: 'Two in a row, different places',
-    description: 'Same timing as above, but the second object is on the other side — attention has to shift.',
+    description: 'Same timing as above, but the second object is on the other side, so attention has to shift.',
     experiment: {
       ...base, name: 'Different locations',
       stimulusTypes: [

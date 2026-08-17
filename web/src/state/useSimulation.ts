@@ -17,7 +17,8 @@ export interface SimulationState {
   error: string | null
 }
 
-const DEBOUNCE_MS = 120
+/** Long enough that typing "600" digit by digit doesn't run three simulations. */
+const DEBOUNCE_MS = 350
 
 export function useSimulation(experiment: Experiment): SimulationState {
   const [result, setResult] = useState<SimulationResult | null>(null)

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import type { Experiment } from '../model/types'
 import { stimColor, type Action } from '../state/experiment'
 
@@ -24,11 +26,28 @@ function NumberField({ label, value, min, max, step = 1, onChange, hint }: {
   )
 }
 
+/**
+ * Slider whose readout follows the thumb live but which commits to the
+ * experiment only when the drag ends (pointer up / key up), so a simulation
+ * doesn't start on every pixel of movement.
+ */
 function WeightField({ label, value, onChange, hint }: { label: string; value: number; hint: string; onChange: (v: number) => void }) {
+  const [draft, setDraft] = useState<number | null>(null)
+  const shown = draft ?? value
+  const commit = () => {
+    if (draft !== null && draft !== value) onChange(draft)
+    setDraft(null)
+  }
   return (
     <label className="field weight">
-      <span className="field-label">{label} <b>{value.toFixed(2)}</b></span>
-      <input type="range" min={0} max={1} step={0.01} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <span className="field-label">{label} <b>{shown.toFixed(2)}</b></span>
+      <input
+        type="range" min={0} max={1} step={0.01} value={shown}
+        onChange={(e) => setDraft(Number(e.target.value))}
+        onPointerUp={commit}
+        onKeyUp={commit}
+        onBlur={commit}
+      />
       <span className="field-hint">{hint}</span>
     </label>
   )
