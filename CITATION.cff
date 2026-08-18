@@ -7,8 +7,8 @@ type: software
 authors:
   - family-names: Varghese
     given-names: Dheeraj
-repository-code: https://github.com/dhevarghese/RAGNAROC-UI
-url: https://dhevarghese.github.io/RAGNAROC-UI/
+repository-code: https://github.com/dhevarghese/ragnaroc-sim
+url: https://dhevarghese.github.io/ragnaroc-sim/
 license: MIT
 abstract: >-
   An interactive, browser-native simulator for the RAGNAROC model of reflexive

@@ -1,4 +1,4 @@
-# Ragnaroc
+# Ragnaroc simulator
 
 An interactive simulator for the RAGNAROC model of reflexive visual attention
 ([Wyble et al., 2020](https://psycnet.apa.org/record/2020-58898-001)).
@@ -10,7 +10,7 @@ The app runs entirely in the browser: the model is a TypeScript port of the
 reference implementation, executed in a Web Worker, so every change
 re-simulates in a few hundred milliseconds and nothing is uploaded anywhere.
 
-Live site: https://dhevarghese.github.io/RAGNAROC-UI/
+Live site: https://dhevarghese.github.io/ragnaroc-sim/
 
 ## Repository layout
 

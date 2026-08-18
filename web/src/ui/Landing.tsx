@@ -118,7 +118,7 @@ export function Landing({ onOpen, resumeName }: Props) {
         <p className="landing-links">
           <a href={PREPRINT_URL} target="_blank" rel="noreferrer">Preprint (bioRxiv)</a>
           <a href={PAPER_URL} target="_blank" rel="noreferrer">Psychological Review</a>
-          <a href="https://github.com/dhevarghese/RAGNAROC-UI" target="_blank" rel="noreferrer">Source on GitHub</a>
+          <a href="https://github.com/dhevarghese/ragnaroc-sim" target="_blank" rel="noreferrer">Source on GitHub</a>
         </p>
       </section>
     </div>
